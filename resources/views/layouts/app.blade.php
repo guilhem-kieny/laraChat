@@ -16,8 +16,6 @@
 </head>
 <body>
 <div id="app">
-
-    <!-- Contenu principal -->
     <div class="container mt-4">
         <div class="container">
             <div class="row justify-content-center">

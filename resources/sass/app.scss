@@ -3,6 +3,7 @@ $mainColor: #73b72b;
     background-color: #a0aec0;
     height: 100vh;
     box-shadow: 0 2px 6px 1px #787878;
+
 }
 .fill-width {
     width: 100%;
@@ -22,12 +23,11 @@ $mainColor: #73b72b;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    .robot-icon.v-icon {
-        color: $mainColor;
-        font-size: 35px;
-    }
 }
-
+.robot-icon {
+    color: $mainColor !important;
+    font-size: 35px !important;
+}
 .btn-transparent {
     background-color: transparent !important;
     box-shadow: none !important;

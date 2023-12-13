@@ -5,8 +5,8 @@ export default {
     data() {
         return {
             state: "index",
-            conversation:null,
-            messages:{},
+            conversation: this.conversation,
+            messages:null,
             newMessage:"",
         }
     },
@@ -91,41 +91,42 @@ export default {
 </script>
 
 <template>
-    <div v-if="state === 'index'">
-        <v-card-text class="conversation-title-container">
-            <v-card-title><h2>Discussions</h2></v-card-title>
-            <v-btn class="add-btn" v-on:click="storeConversation"><v-icon>mdi-plus</v-icon></v-btn>
-        </v-card-text>
-        <v-divider></v-divider>
+    <div class="list-conversation-container">
+        <div v-if="state === 'index'">
+            <v-card-text class="conversation-title-container">
+                <v-card-title><h2>Discussions</h2></v-card-title>
+                <v-btn class="add-btn" v-on:click="storeConversation"><v-icon>mdi-plus</v-icon></v-btn>
+            </v-card-text>
+            <v-divider></v-divider>
 
-        `<v-card-text>
+            <v-card-text>
             <v-list v-for="conversation in conversations" :key="conversation.id">
                 <a v-on:click.prevent="showConversation(conversation.id)" href="#"><v-list-item-title class="list-item"> {{ conversation.name }}</v-list-item-title></a>
             </v-list>
         </v-card-text>
+        </div>
 
+        <div class="conversation-main-container" v-else-if="state === 'show' && conversation">
+            <v-card-text class="conversation-title-container">
+                <v-card-title><h2>{{ conversation.name }}</h2></v-card-title>
+                <a v-on:click.prevent="state = 'index'" href="#"><v-btn class="btn-transparent"><v-icon>mdi-chevron-left</v-icon></v-btn></a>
+            </v-card-text>
+            <v-divider></v-divider>
 
-    </div>
+            <v-card-text id="conversation-container">
+                <v-list v-for="message in messages" :key="message.id">
+                    <v-list-item class="message-content" :class="{ userMessage: message.user_id === user.id, otherMessage: message.user_id !== user.id }">{{ message.content }}</v-list-item>
+                </v-list>
+            </v-card-text>
+            <v-divider></v-divider>
 
-    <div class="conversation-main-container" v-else-if="state === 'show' && conversation">
-        <v-card-text class="conversation-title-container">
-            <v-card-title><h2>{{ conversation.name }}</h2></v-card-title>
-            <a v-on:click.prevent="state = 'index'" href="#"><v-btn class="btn-transparent"><v-icon>mdi-chevron-left</v-icon></v-btn></a>
-        </v-card-text>
-        <v-divider></v-divider>
-
-        <v-card-text id="conversation-container">
-            <v-list v-for="message in messages" :key="message.id">
-                <v-list-item class="message-content" :class="{ userMessage: message.user_id === user.id, otherMessage: message.user_id !== user.id }">{{ message.content }}</v-list-item>
-            </v-list>
-        </v-card-text>
-        <v-divider></v-divider>
-
-        <div class="message-field">
-            <v-text-field v-model="newMessage" class="message-writer"></v-text-field>
-            <v-btn class="send-btn" v-on:click="storeMessage(conversation.id)"><v-icon>mdi-send</v-icon></v-btn>
+            <div class="message-field">
+                <v-text-field v-model="newMessage" class="message-writer"></v-text-field>
+                <v-btn class="send-btn" v-on:click="storeMessage(conversation.id)"><v-icon>mdi-send</v-icon></v-btn>
+            </div>
         </div>
     </div>
+
 </template>
 
 <style lang="scss" scoped>

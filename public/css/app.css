@@ -27,9 +27,10 @@
   align-items: center;
   justify-content: space-between;
 }
-.header-container .robot-icon.v-icon {
-  color: #73b72b;
-  font-size: 35px;
+
+.robot-icon {
+  color: #73b72b !important;
+  font-size: 35px !important;
 }
 
 .btn-transparent {
