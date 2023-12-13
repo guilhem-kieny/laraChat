@@ -1,5 +1,4 @@
 <script>
-import loginForm from "./login-form.vue";
 
 export default {
     name: "list-conversations",
@@ -22,8 +21,32 @@ export default {
 
     methods: {
         scrollToTop() {
-            var container = document.getElementById('conversation-container');
+            let container = document.getElementById('conversation-container');
             container.scrollTop = container.scrollHeight;
+        },
+        async storeConversation() {
+            this.state = 'show';
+
+            try {
+                const response = await fetch(`http://127.0.0.1:8000/api/conversation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken,
+                    },
+                });
+                if (!response.ok) {
+                    throw new Error('Échec de création de la conversation');
+                }
+
+                const data = await response.json();
+                this.conversation = data.conversation;
+
+            } catch (error) {
+                console.error(error);
+                throw error;
+            }
         },
         showConversation(id) {
             this.state = 'show';
@@ -40,7 +63,7 @@ export default {
 
             }).catch((err) => console.log(err))
         },
-        async sendMessage(id) {
+        async storeMessage(id) {
             try {
                 const response = await fetch(`http://127.0.0.1:8000/api/conversation/${id}/message`, {
                     method: 'POST',
@@ -63,19 +86,15 @@ export default {
                 throw error;
             }
         },
-
     }
-
 }
 </script>
 
 <template>
     <div v-if="state === 'index'">
-        <v-card-text>
+        <v-card-text class="conversation-title-container">
             <v-card-title>Discussions</v-card-title>
-            <div>
-                <v-btn>+</v-btn>
-            </div>
+            <v-btn v-on:click="storeConversation"><v-icon>mdi-plus</v-icon></v-btn>
         </v-card-text>
         <v-divider></v-divider>
 
@@ -89,8 +108,9 @@ export default {
     </div>
 
     <div class="conversation-main-container" v-else-if="state === 'show' && conversation">
-        <v-card-text>
+        <v-card-text class="conversation-title-container">
             <v-card-title>{{ conversation.name }}</v-card-title>
+            <a href="http://127.0.0.1:8000/home"><v-btn>retour</v-btn></a>
         </v-card-text>
         <v-divider></v-divider>
 
@@ -103,7 +123,7 @@ export default {
 
         <div class="message-field">
             <v-text-field v-model="newMessage" class="message-writer"></v-text-field>
-            <v-btn class="send-btn" v-on:click="sendMessage(conversation.id)"><v-icon>mdi-send</v-icon></v-btn>
+            <v-btn class="send-btn" v-on:click="storeMessage(conversation.id)"><v-icon>mdi-send</v-icon></v-btn>
         </div>
     </div>
 </template>
@@ -113,7 +133,11 @@ export default {
         color: black;
         text-decoration: none;
     }
-
+    .conversation-title-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
     .list-item {
         background-color: #e4e4e4;
         border-radius: 5px;

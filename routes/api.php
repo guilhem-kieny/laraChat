@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ConversationApiController;
+use App\Http\Controllers\Api\MessageApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -24,6 +25,11 @@ Route::post('/login', [AuthController::class, 'login'])->name('api.login');
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     //Route::get('/user', [AuthController::class, 'currentUser']);
+
+    Route::get('/conversation/{id}', [ConversationApiController::class, 'show'])->name('api.conversation.show');
+    Route::post('/conversation', [ConversationApiController::class, 'store'])->name('api.conversation.store');
+
+    Route::post('/conversation/{id}/message', [MessageApiController::class, 'store'])->name('api.conversation.message.store');
 });
-Route::get('/conversation/{id}', [ConversationApiController::class, 'show'])->name('api.conversation.show');
-Route::post('/conversation/{id}/message', [ConversationApiController::class, 'store'])->name('api.conversation.store');
+
+

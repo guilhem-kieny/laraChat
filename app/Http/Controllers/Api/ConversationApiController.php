@@ -17,22 +17,16 @@ class ConversationApiController extends Controller
 
         return response()->json(['conversation' => $conversation, 'messages' => $messages]);
     }
+    public function store() {
 
-    public function store($id, Request $request) {
-
-        $conversation = Conversation::findOrFail($id);
-
-        $request->validate([
-            'content' => 'required|string',
-        ]);
         $user = Auth::user();
-        $message = $conversation->messages()->create([
-            'content' => $request->input('content'),
-            'user_id' => $user->id,
-            'conversation_id' => $id,
+
+        $conversation = $user->conversations()->create([
+            'name' => "create-conv",
         ]);
 
-
-        return response()->json(['message' => $message]);
+        return response()->json(['conversation' => $conversation]);
     }
+
+
 }
