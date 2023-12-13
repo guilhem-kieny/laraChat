@@ -93,8 +93,8 @@ export default {
 <template>
     <div v-if="state === 'index'">
         <v-card-text class="conversation-title-container">
-            <v-card-title>Discussions</v-card-title>
-            <v-btn v-on:click="storeConversation"><v-icon>mdi-plus</v-icon></v-btn>
+            <v-card-title><h2>Discussions</h2></v-card-title>
+            <v-btn class="add-btn" v-on:click="storeConversation"><v-icon>mdi-plus</v-icon></v-btn>
         </v-card-text>
         <v-divider></v-divider>
 
@@ -109,8 +109,8 @@ export default {
 
     <div class="conversation-main-container" v-else-if="state === 'show' && conversation">
         <v-card-text class="conversation-title-container">
-            <v-card-title>{{ conversation.name }}</v-card-title>
-            <a href="http://127.0.0.1:8000/home"><v-btn>retour</v-btn></a>
+            <v-card-title><h2>{{ conversation.name }}</h2></v-card-title>
+            <a v-on:click.prevent="state = 'index'" href="#"><v-btn class="btn-transparent"><v-icon>mdi-chevron-left</v-icon></v-btn></a>
         </v-card-text>
         <v-divider></v-divider>
 
@@ -128,7 +128,8 @@ export default {
     </div>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+    $mainColor: #73b72b;
     a {
         color: black;
         text-decoration: none;
@@ -137,6 +138,8 @@ export default {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding-top: 0;
+        padding-bottom: 0;
     }
     .list-item {
         background-color: #e4e4e4;
@@ -147,7 +150,7 @@ export default {
         height: 100%;
     }
     #conversation-container {
-        height: 70vh;
+        height: 68vh;
         overflow: scroll;
     }
 
@@ -170,12 +173,14 @@ export default {
         margin-left: 30%;
     }
     .send-btn {
-        height: 80px !important;
+        height: 88px !important;
         border-radius: 0;
-        width: 80px;
+        width: 88px;
         position: absolute;
         right: 0;
         bottom: 0;
     }
-
+    .add-btn {
+        color: $mainColor;
+    }
 </style>
