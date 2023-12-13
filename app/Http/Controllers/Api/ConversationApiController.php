@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class ConversationApiController extends Controller
 {
@@ -24,14 +25,13 @@ class ConversationApiController extends Controller
         $request->validate([
             'content' => 'required|string',
         ]);
-
+        $user = Auth::user();
         $message = $conversation->messages()->create([
             'content' => $request->input('content'),
-            'user_id' => auth()->id(),
+            'user_id' => $user->id,
             'conversation_id' => $id,
         ]);
 
-        broadcast(new NewMessage($message))->toOthers();
 
         return response()->json(['message' => $message]);
     }
