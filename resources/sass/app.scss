@@ -1,4 +1,8 @@
 $mainColor: #73b72b;
+
+h1, h2 {
+    color: $mainColor
+}
 #app {
     background-color: #a0aec0;
     height: 100vh;

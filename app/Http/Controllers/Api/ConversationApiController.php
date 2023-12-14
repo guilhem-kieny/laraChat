@@ -22,10 +22,19 @@ class ConversationApiController extends Controller
         $user = Auth::user();
 
         $conversation = $user->conversations()->create([
-            'name' => "create-conv",
+            'name' => "Nouvelle conversation",
         ]);
 
         return response()->json(['conversation' => $conversation]);
+    }
+
+    public function destroy($id) {
+
+        $conversation = Conversation::findOrFail($id);
+
+        $conversation->delete();
+
+        return response("", 204);
     }
 
 

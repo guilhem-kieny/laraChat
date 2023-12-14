@@ -26,10 +26,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     //Route::get('/user', [AuthController::class, 'currentUser']);
 
-    Route::get('/conversation/{id}', [ConversationApiController::class, 'show'])->name('api.conversation.show');
-    Route::post('/conversation', [ConversationApiController::class, 'store'])->name('api.conversation.store');
-
-    Route::post('/conversation/{id}/message', [MessageApiController::class, 'store'])->name('api.conversation.message.store');
+    Route::resource('conversations', ConversationApiController::class)->only(['show', 'store', 'destroy']);
+    Route::resource('conversations/messages', MessageApiController::class)->only(['store']);
 });
 
 

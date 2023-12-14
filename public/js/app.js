@@ -2082,7 +2082,6 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   props: ["conversations", "user"],
   created: function created() {
     this.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    console.log(this.conversation);
   },
   methods: {
     scrollToTop: function scrollToTop() {
@@ -2099,7 +2098,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               _this.state = 'show';
               _context.prev = 1;
               _context.next = 4;
-              return fetch("http://127.0.0.1:8000/api/conversation", {
+              return fetch("/api/conversations", {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -2137,7 +2136,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     showConversation: function showConversation(id) {
       var _this2 = this;
       this.state = 'show';
-      var response = fetch("http://127.0.0.1:8000/api/conversation/".concat(id), {
+      var response = fetch("/api/conversations/".concat(id), {
         method: 'GET'
       }).then(function (response) {
         return response.json();
@@ -2150,6 +2149,15 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         return console.log(err);
       });
     },
+    deleteConversation: function deleteConversation(id) {
+      fetch("/api/conversations/".concat(id), {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': this.csrfToken
+        }
+      });
+    },
     storeMessage: function storeMessage(id) {
       var _this3 = this;
       return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
@@ -2159,7 +2167,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
             case 0:
               _context2.prev = 0;
               _context2.next = 3;
-              return fetch("http://127.0.0.1:8000/api/conversation/".concat(id, "/message"), {
+              return fetch("/api/conversations/".concat(id, "/messages"), {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -2237,7 +2245,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
             case 0:
               _context.prev = 0;
               _context.next = 3;
-              return fetch('http://127.0.0.1:8000/api/login', {
+              return fetch('/api/login', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -2299,7 +2307,12 @@ __webpack_require__.r(__webpack_exports__);
       state: "close"
     };
   },
-  props: ["conversations", "user"]
+  props: ["conversations", "user"],
+  methods: {
+    toggleState: function toggleState() {
+      this.state = this.state === 'open' ? 'close' : 'open';
+    }
+  }
 });
 
 /***/ }),
@@ -2343,7 +2356,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
             case 0:
               _context.prev = 0;
               _context.next = 3;
-              return fetch('http://127.0.0.1:8000/api/register', {
+              return fetch('/api/register', {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -2415,8 +2428,12 @@ var render = function render() {
     }
   }, [_c("v-icon", [_vm._v("mdi-plus")])], 1)], 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("v-card-text", _vm._l(_vm.conversations, function (conversation) {
     return _c("v-list", {
-      key: conversation.id
+      key: conversation.id,
+      staticClass: "list-conversation-container"
+    }, [_c("v-list-item", {
+      staticClass: "list-item-conversation"
     }, [_c("a", {
+      staticClass: "link-conv",
       attrs: {
         href: "#"
       },
@@ -2428,7 +2445,16 @@ var render = function render() {
       }
     }, [_c("v-list-item-title", {
       staticClass: "list-item"
-    }, [_vm._v(" " + _vm._s(conversation.name))])], 1)]);
+    }, [_vm._v(_vm._s(conversation.name))])], 1), _vm._v(" "), _c("div", {
+      staticClass: "list-delete-container",
+      on: {
+        click: function click($event) {
+          return _vm.deleteConversation(conversation.id);
+        }
+      }
+    }, [_c("v-icon", {
+      staticClass: "delete-conv-icon"
+    }, [_vm._v("mdi-close-circle")])], 1)])], 1);
   }), 1)], 1) : _vm.state === "show" && _vm.conversation ? _c("div", {
     staticClass: "conversation-main-container"
   }, [_c("v-card-text", {
@@ -2568,25 +2594,32 @@ __webpack_require__.r(__webpack_exports__);
 var render = function render() {
   var _vm = this,
     _c = _vm._self._c;
-  return _c("div", [_vm.state === "close" ? _c("div", {
+  return _c("div", [_c("div", {
     staticClass: "open-chat-container",
     on: {
-      click: function click($event) {
-        _vm.state = "open";
-      }
+      click: _vm.toggleState
     }
   }, [_c("v-icon", {
     staticClass: "robot-icon"
-  }, [_vm._v("mdi-robot")])], 1) : _vm._e(), _vm._v(" "), _vm.state === "open" ? _c("div", {
+  }, [_vm._v("mdi-robot")])], 1), _vm._v(" "), _vm.state === "open" ? _c("div", {
     staticClass: "chat-container"
-  }, [_c("list-conversations", {
+  }, [_c("div", {
+    staticClass: "header-bot"
+  }, [_c("v-btn", {
+    staticClass: "btn-transparent"
+  }, [_c("v-icon", [_vm._v("mdi-menu")])], 1), _vm._v(" "), _c("v-icon", {
+    staticClass: "robot-icon"
+  }, [_vm._v("mdi-robot")]), _vm._v(" "), _c("v-btn", {
+    staticClass: "btn-transparent",
+    on: {
+      click: _vm.toggleState
+    }
+  }, [_c("v-icon", {
+    staticClass: "robot-icon"
+  }, [_vm._v("mdi-close")])], 1)], 1), _vm._v(" "), _c("list-conversations", {
     attrs: {
-      conversations: {
-        conversations: _vm.conversations
-      },
-      user: {
-        user: _vm.user
-      }
+      conversations: _vm.conversations,
+      user: _vm.user
     }
   })], 1) : _vm._e()]);
 };
@@ -2783,7 +2816,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "a[data-v-43e830ee] {\n  color: black;\n  text-decoration: none;\n}\n.conversation-title-container[data-v-43e830ee] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding-top: 0;\n  padding-bottom: 0;\n}\n.list-item[data-v-43e830ee] {\n  background-color: #e4e4e4;\n  border-radius: 5px;\n  padding: 15px;\n}\n.conversation-main-container[data-v-43e830ee] {\n  height: 100%;\n}\n#conversation-container[data-v-43e830ee] {\n  height: 68vh;\n  overflow: scroll;\n}\n.message-writer[data-v-43e830ee] {\n  margin-top: 40px;\n  width: calc(100% - 80px);\n}\n.message-content[data-v-43e830ee] {\n  border-radius: 5px;\n  max-width: 70%;\n  padding: 20px;\n  font-size: 16px;\n}\n.otherMessage[data-v-43e830ee] {\n  background-color: #73b72b;\n  color: white !important;\n}\n.userMessage[data-v-43e830ee] {\n  background-color: #e4e4e4;\n  margin-left: 30%;\n}\n.send-btn[data-v-43e830ee] {\n  height: 88px !important;\n  border-radius: 0;\n  width: 88px;\n  position: absolute;\n  right: 0;\n  bottom: 0;\n}\n.add-btn[data-v-43e830ee] {\n  color: #73b72b;\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "a[data-v-43e830ee] {\n  color: black;\n  text-decoration: none;\n}\n.list-conversation-container[data-v-43e830ee] {\n  padding: 5px 20px;\n}\n.list-item-conversation[data-v-43e830ee] {\n  display: flex;\n  border: 1px solid #e6e6e6;\n  border-radius: 5px;\n  padding: 0;\n  text-align: center;\n  transition: 0.3s;\n}\n.list-item-conversation[data-v-43e830ee]:hover {\n  background-color: #73b72b;\n  border: 1px solid #73b72b;\n}\n.list-item-conversation:hover .delete-conv-icon[data-v-43e830ee] {\n  visibility: visible;\n}\n.list-item-conversation:hover .link-conv[data-v-43e830ee] {\n  color: white;\n}\n.list-item-conversation .link-conv[data-v-43e830ee] {\n  width: 100%;\n  padding: 20px 0 20px 58px;\n}\n.list-item-conversation .list-delete-container[data-v-43e830ee] {\n  display: flex;\n  padding: 17px;\n  cursor: pointer;\n}\n.list-item-conversation .delete-conv-icon[data-v-43e830ee] {\n  visibility: hidden;\n  color: white;\n}\n.conversation-title-container[data-v-43e830ee] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding-top: 0;\n  padding-bottom: 0;\n}\n.conversation-main-container[data-v-43e830ee] {\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  justify-content: space-around;\n}\n#conversation-container[data-v-43e830ee] {\n  height: 68vh;\n  overflow: scroll;\n}\n.message-field[data-v-43e830ee] {\n  display: flex;\n}\n.message-writer[data-v-43e830ee] {\n  padding: 15px;\n}\n.message-content[data-v-43e830ee] {\n  border-radius: 20px;\n  max-width: 70%;\n  padding: 15px;\n  font-size: 16px;\n}\n.otherMessage[data-v-43e830ee] {\n  background-color: #73b72b;\n  color: white !important;\n}\n.userMessage[data-v-43e830ee] {\n  background-color: #e4e4e4;\n  margin-left: auto;\n}\n.send-btn[data-v-43e830ee] {\n  height: auto !important;\n  border-radius: 0;\n  box-shadow: none;\n  background: none !important;\n}\n.send-btn .v-icon[data-v-43e830ee]:hover {\n  color: #73b72b;\n}\n.send-btn[data-v-43e830ee]:before {\n  background-color: transparent;\n}\n.add-btn[data-v-43e830ee] {\n  color: #73b72b;\n}\n@media only screen and (max-width: 576px) {\n.message-content[data-v-43e830ee] {\n    max-width: 85%;\n    padding: 10px;\n    font-size: 14px;\n}\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -2807,7 +2840,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, ".open-chat-container {\n  background-color: white;\n  padding: 10px;\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n}\n.chat-container {\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n}\n.chat-container .list-conversation-container {\n  height: 500px;\n  background-color: white;\n  box-shadow: 0 2px 4px 1px #828282;\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, ".open-chat-container {\n  z-index: 1;\n  background-color: white;\n  padding: 10px;\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  cursor: pointer;\n}\n.chat-container {\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n}\n.chat-container .list-conversation-container {\n  height: 500px;\n  width: 350px;\n  background-color: white;\n  box-shadow: 0 2px 4px 1px #828282;\n}\n.chat-container .list-conversation-container h2 {\n  font-size: 25px;\n}\n.chat-container .list-conversation-container #conversation-container {\n  height: 70%;\n}\n.header-bot {\n  background-color: #73b72b;\n  display: flex;\n  justify-content: space-between;\n  padding: 15px;\n}\n.header-bot .v-btn {\n  padding: 0 !important;\n  min-width: -moz-fit-content !important;\n  min-width: fit-content !important;\n}\n.header-bot .v-icon {\n  color: white !important;\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
