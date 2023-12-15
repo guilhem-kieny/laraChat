@@ -22,9 +22,8 @@ class MessageApiController extends Controller
         $message = $conversation->messages()->create([
             'content' => $request->input('content'),
             'user_id' => $user->id,
-            'conversation_id' => $id,
         ]);
 
-        return response()->json(['message' => $message]);
+        return response()->json(['message' => $message], 201);
     }
 }

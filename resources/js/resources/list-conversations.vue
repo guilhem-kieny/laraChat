@@ -1,4 +1,5 @@
 <script>
+import { DateTime } from 'luxon';
 
 export default {
     name: "list-conversations",
@@ -20,6 +21,12 @@ export default {
     },
 
     methods: {
+        isLastItem(index) {
+            return index === this.messages.length - 1;
+        },
+        formatCreatedAt(date) {
+            return DateTime.fromISO(date).toFormat('HH:mm dd LLLL yyyy');
+        },
         scrollToTop() {
             let container = document.getElementById('conversation-container');
             container.scrollTop = container.scrollHeight;
@@ -101,7 +108,7 @@ export default {
 </script>
 
 <template>
-    <div class="list-conversation-container">
+    <div class="list-conversation-main-container">
         <div v-if="state === 'index'">
             <v-card-text class="conversation-title-container">
                 <v-card-title><h2>Discussions</h2></v-card-title>
@@ -136,14 +143,15 @@ export default {
             <v-divider></v-divider>
 
             <v-card-text id="conversation-container">
-                <v-list  v-for="message in messages" :key="message.id">
+                <v-list  v-for="(message, index) in messages" :key="index">
+                    <p v-if="isLastItem(index)" :class="{ dateUser: message.user_id === user.id }">{{ formatCreatedAt(message.created_at) }}</p>
                     <v-list-item class="message-content" :class="{ userMessage: message.user_id === user.id, otherMessage: message.user_id !== user.id }">{{ message.content }}</v-list-item>
                 </v-list>
             </v-card-text>
             <v-divider></v-divider>
 
             <div class="message-field">
-                <v-text-field v-model="newMessage" class="message-writer"></v-text-field>
+                <v-text-field v-model="newMessage" placeholder="Écrivez votre message ..." class="message-writer"></v-text-field>
                 <v-btn class="send-btn" v-on:click="storeMessage(conversation.id)"><v-icon>mdi-send</v-icon></v-btn>
             </div>
         </div>
@@ -223,12 +231,17 @@ export default {
     .message-content {
         border-radius: 20px;
         max-width: 70%;
+        width: fit-content;
+        min-height: 10px;
         padding: 15px;
         font-size: 16px;
     }
     .otherMessage {
         background-color: #73b72b;
         color: white !important;
+    }
+    .dateUser {
+        text-align: right;
     }
     .userMessage {
         background-color: #e4e4e4;

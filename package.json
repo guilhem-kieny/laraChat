@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "@mdi/font": "^7.3.67",
+        "luxon": "^3.4.4",
         "vue": "^2.6.14",
         "vuetify": "^2.7.1"
     }

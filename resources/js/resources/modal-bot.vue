@@ -21,7 +21,7 @@ export default {
 
 <template>
     <div>
-        <div v-on:click="toggleState" class="open-chat-container">
+        <div v-on:click="toggleState" v-if="state === 'close'" class="open-chat-container">
             <v-icon class="robot-icon">mdi-robot</v-icon>
         </div>
         <div v-if="state === 'open'" class="chat-container">
@@ -50,17 +50,21 @@ export default {
         position: absolute;
         bottom: 0;
         left: -100px;
-        .list-conversation-container {
+        box-shadow: 0 2px 4px 1px #828282;
+        .list-conversation-main-container {
             height: 500px;
             width: 350px;
             background-color: white;
-            box-shadow: 0 2px 4px 1px #828282;
-
             h2 {
-                font-size: 25px;
+                font-size: 20px;
             }
             #conversation-container {
-                height: 70%
+                height: 70%;
+                .message-content {
+                    font-size: 14px;
+                    padding: 10px;
+                    min-height: 10px;
+                }
             }
         }
     }
