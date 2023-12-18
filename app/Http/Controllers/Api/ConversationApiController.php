@@ -9,6 +9,13 @@ use Illuminate\Support\Facades\Auth;
 
 class ConversationApiController extends Controller
 {
+    public function index() {
+
+        $user = Auth::user();
+        $conversations = $user->conversations;
+
+        return response()->json(['conversations' => $conversations]);
+    }
     public function show($id) {
 
         $conversation = Conversation::findOrFail($id);
@@ -21,11 +28,11 @@ class ConversationApiController extends Controller
 
         $user = Auth::user();
 
-        $conversation = $user->conversations()->create([
+        $user->conversations()->create([
             'name' => "Nouvelle conversation",
         ]);
 
-        return response()->json(['conversation' => $conversation]);
+        return response("", 201);
     }
 
     public function destroy($id) {

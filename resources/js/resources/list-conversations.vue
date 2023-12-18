@@ -1,5 +1,5 @@
 <script>
-import { DateTime } from 'luxon';
+import {DateTime} from 'luxon';
 
 export default {
     name: "list-conversations",
@@ -7,7 +7,8 @@ export default {
         return {
             conversationName: "",
             state: "index",
-            conversation: this.conversation,
+            dataConversations: this.conversations,
+            dataConversation: "",
             messages: null,
             newMessage: "",
             nameState: "hide",
@@ -43,31 +44,25 @@ export default {
             this.nameState = this.nameState === 'show' ? 'hide' : 'show';
         },
         getDisplayNewName(conversation_id) {
-            const oldConversation = this.conversations.find(conversation => conversation.id === conversation_id);
+            const oldConversation = this.dataConversations.find(conversation => conversation.id === conversation_id);
             oldConversation.name = this.conversationName;
         },
-        async storeConversation() {
-            this.state = 'show';
-
+        indexConversations() {
             try {
-                const response = await fetch(`/api/conversations`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                });
-                if (!response.ok) {
-                    throw new Error('Échec de création de la conversation');
-                }
-
-                const data = await response.json();
-                this.conversation = data.conversation;
-
+                fetch(`/api/conversations`, {
+                    method: 'GET',
+                })
+                    .then((response) => {
+                        if (!response.ok) {
+                            throw new Error(`La récupération des conversations a échoué. Statut : ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then((data) => {
+                        this.dataConversations = data.conversations;
+                    });
             } catch (error) {
-                console.error(error);
-                throw error;
+                console.log(error);
             }
         },
         showConversation(conversation_id) {
@@ -75,25 +70,55 @@ export default {
 
             const response = fetch(`/api/conversations/${conversation_id}`, {
                 method: 'GET',
-            }).then((response) => response.json()).then((data) =>{
-
-                this.conversation = data.conversation;
-                this.messages = data.messages;
-                this.conversationName = data.conversation.name;
-            }).then(() => {
-
-                this.scrollToTop();
-            }).catch((err) => console.log(err))
-        },
-        deleteConversation(conversation_id) {
-
-            fetch(`/api/conversations/${conversation_id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': this.csrfToken,
-                }
             })
+                .then((response) => response.json()).then((data) => {
+                    this.dataConversation = data.conversation;
+                    this.messages = data.messages;
+                    this.conversationName = data.conversation.name;
+                })
+                .then(() => {
+                    this.scrollToTop();
+                }).catch((error) => console.log(error))
+        },
+        async storeConversation() {
+
+            try {
+                await fetch(`/api/conversations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken,
+                    },
+                })
+                    .then(() => {
+                            this.indexConversations();
+                        }
+                    )
+
+            } catch (error) {
+                console.error(error);
+                throw error;
+            }
+        },
+        async deleteConversation(conversation_id) {
+            try {
+                const indexRemove = this.dataConversations.findIndex(conversation => conversation.id === conversation_id);
+                this.dataConversations.splice(indexRemove, 1);
+
+                await fetch(`/api/conversations/${conversation_id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken,
+                    }
+                })
+                    .then(() => {
+                        this.indexConversations();
+                    });
+            } catch (error) {
+                console.error('Erreur lors de la suppression de la conversation', error);
+            }
         },
         async storeMessage(conversation_id) {
             try {
@@ -104,7 +129,7 @@ export default {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': this.csrfToken,
                     },
-                    body: JSON.stringify({ content: this.newMessage }),
+                    body: JSON.stringify({content: this.newMessage}),
                 });
                 if (!response.ok) {
                     throw new Error('Échec de l\'envoi du message');
@@ -127,7 +152,7 @@ export default {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': this.csrfToken,
                     },
-                    body: JSON.stringify({ content: this.conversationName }),
+                    body: JSON.stringify({content: this.conversationName}),
                 });
                 if (!response.ok) {
                     throw new Error('Échec de la modification du nom de la conversation');
@@ -148,12 +173,15 @@ export default {
         <div v-if="state === 'index'">
             <v-card-text class="conversation-title-container">
                 <v-card-title><h2>Discussions</h2></v-card-title>
-                <v-btn class="add-btn" v-on:click="storeConversation"><v-icon>mdi-plus</v-icon></v-btn>
+                <v-btn class="add-btn" v-on:click="storeConversation">
+                    <v-icon>mdi-plus</v-icon>
+                </v-btn>
             </v-card-text>
             <v-divider></v-divider>
 
             <v-card-text>
-                <v-list class="list-conversation-container" v-for="conversation in conversations" :key="conversation.id">
+                <v-list class="list-conversation-container" v-for="conversation in dataConversations"
+                        :key="conversation.id">
                     <v-list-item class="list-item-conversation">
                         <a class="link-conv" v-on:click.prevent="showConversation(conversation.id)" href="#">
                             <v-list-item-title class="list-item">{{ conversation.name }}</v-list-item-title>
@@ -166,13 +194,15 @@ export default {
             </v-card-text>
         </div>
 
-        <div class="conversation-main-container" v-else-if="state === 'show' && conversation">
+        <div class="conversation-main-container" v-else-if="state === 'show' && dataConversation">
             <v-card-text class="conversation-title-container">
                 <v-card-title>
                     <h2 v-if="this.conversationName">{{ truncateTitle(this.conversationName, 20) }}</h2>
                 </v-card-title>
                 <div>
-                    <v-btn v-on:click="toggleConversationName" class="btn-transparent"><v-icon>mdi-pencil</v-icon></v-btn>
+                    <v-btn v-on:click="toggleConversationName" class="btn-transparent">
+                        <v-icon>mdi-pencil</v-icon>
+                    </v-btn>
                     <a v-on:click.prevent="state = 'index'" href="#">
                         <v-btn class="btn-transparent">
                             <v-icon>mdi-chevron-left</v-icon>
@@ -181,24 +211,34 @@ export default {
                 </div>
 
                 <div class="update-conversation-name-container" v-if="nameState === 'show'">
-                    <v-text-field v-model="conversationName" placeholder="Modifiez le nom de la conversation ..."></v-text-field>
-                    <v-btn class="send-btn" v-on:click="updateConversationName(conversation.id)"><v-icon>mdi-send</v-icon></v-btn>
+                    <v-text-field v-model="conversationName"
+                                  placeholder="Modifiez le nom de la conversation ..."></v-text-field>
+                    <v-btn class="send-btn" v-on:click="updateConversationName(dataConversation.id)">
+                        <v-icon>mdi-send</v-icon>
+                    </v-btn>
                 </div>
 
             </v-card-text>
             <v-divider></v-divider>
 
             <v-card-text id="conversation-container">
-                <v-list  v-for="(message, index) in messages" :key="index">
-                    <p v-if="isLastItem(index)" :class="{ dateUser: message.user_id === user.id }">{{ formatCreatedAt(message.created_at) }}</p>
-                    <v-list-item class="message-content" :class="{ userMessage: message.user_id === user.id, otherMessage: message.user_id !== user.id }">{{ message.content }}</v-list-item>
+                <v-list v-for="(message, index) in messages" :key="index">
+                    <p v-if="isLastItem(index)" :class="{ dateUser: message.user_id === user.id }">
+                        {{ formatCreatedAt(message.created_at) }}</p>
+                    <v-list-item class="message-content"
+                                 :class="{ userMessage: message.user_id === user.id, otherMessage: message.user_id !== user.id }">
+                        {{ message.content }}
+                    </v-list-item>
                 </v-list>
             </v-card-text>
             <v-divider></v-divider>
 
             <div class="message-field">
-                <v-text-field v-model="newMessage" placeholder="Écrivez votre message ..." class="message-writer"></v-text-field>
-                <v-btn class="send-btn" v-on:click="storeMessage(conversation.id)"><v-icon>mdi-send</v-icon></v-btn>
+                <v-text-field v-model="newMessage" placeholder="Écrivez votre message ..."
+                              class="message-writer"></v-text-field>
+                <v-btn class="send-btn" v-on:click="storeMessage(dataConversation.id)">
+                    <v-icon>mdi-send</v-icon>
+                </v-btn>
             </div>
         </div>
     </div>
@@ -206,131 +246,156 @@ export default {
 </template>
 
 <style lang="scss" scoped>
-    $mainColor: #73b72b;
+$mainColor: #73b72b;
 
-    a {
-        color: black;
-        text-decoration: none;
+a {
+    color: black;
+    text-decoration: none;
+}
+
+.update-conversation-name-container {
+    position: absolute;
+    bottom: -90px;
+    left: 0;
+    display: flex;
+    background-color: white;
+    width: 100%;
+    z-index: 1;
+    padding: 10px;
+    box-shadow: 0 0 2px 0 #a7a7a7;
+}
+
+.list-conversation-main-container {
+    h2 {
+        font-size: 20px;
     }
-    .update-conversation-name-container {
-        position: absolute;
-        bottom: -90px;
-        left: 0;
-        display: flex;
-        background-color: white;
-        width: 100%;
-        z-index: 1;
-        padding: 10px;
-        box-shadow: 0 0 2px 0 #a7a7a7;
-    }
-    .list-conversation-main-container {
-        h2 {
-            font-size: 20px;
-        }
-    }
-    .list-conversation-container {
-         padding: 5px 20px;
-     }
-    .list-item-conversation {
-        display: flex;
-        border: 1px solid #e6e6e6;
-        border-radius: 5px;
-        padding: 0;
-        text-align: center;
-        transition: .3s;
-        &:hover {
-            background-color: $mainColor;
-            border: 1px solid $mainColor;
-            .delete-conv-icon {
-                visibility: visible;
-            }
-            .link-conv {
-                color: white;
-            }
-        }
-        .link-conv {
-            width: 100%;
-            padding: 20px 0 20px 58px;
-        }
-        .list-delete-container {
-            display: flex;
-            padding: 17px;
-            cursor: pointer;
-        }
+}
+
+.list-conversation-container {
+    padding: 5px 20px;
+}
+
+.list-item-conversation {
+    display: flex;
+    border: 1px solid #e6e6e6;
+    border-radius: 5px;
+    padding: 0;
+    text-align: center;
+    transition: .3s;
+
+    &:hover {
+        background-color: $mainColor;
+        border: 1px solid $mainColor;
+
         .delete-conv-icon {
-            visibility: hidden;
+            visibility: visible;
+        }
+
+        .link-conv {
             color: white;
         }
     }
-    .conversation-title-container {
-        position: relative;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-top: 0;
-        padding-bottom: 0;
-    }
-    .list-item {
 
-        &:hover {
+    .link-conv {
+        width: 100%;
+        padding: 20px 0 20px 58px;
+    }
 
-        }
-    }
-    .conversation-main-container {
-        height: 100%;
+    .list-delete-container {
         display: flex;
-        flex-direction: column;
-        justify-content: space-around;
+        padding: 17px;
+        cursor: pointer;
     }
-    #conversation-container {
-        height: 68vh;
-        overflow: scroll;
+
+    .delete-conv-icon {
+        visibility: hidden;
+        color: white;
     }
-    .message-field {
-        display: flex;
+}
+
+.conversation-title-container {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.list-item {
+
+    &:hover {
+
     }
-    .message-writer {
-        padding: 15px;
-    }
-    .message-content {
-        border-radius: 20px;
-        max-width: 70%;
-        width: fit-content;
-        min-height: 10px;
-        padding: 15px;
-        font-size: 16px;
-    }
-    .otherMessage {
-        background-color: #73b72b;
-        color: white !important;
-    }
-    .dateUser {
-        text-align: right;
-    }
-    .userMessage {
-        background-color: #e4e4e4;
-        margin-left: auto;
-    }
-    .send-btn {
-        height: auto !important;
-        border-radius: 0;
-        box-shadow: none;
-        background: none !important;
-        .v-icon:hover {
-            color: $mainColor;
-        }
-        &:before {
-            background-color: transparent;
-        }
-    }
-    .add-btn {
+}
+
+.conversation-main-container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+#conversation-container {
+    height: 68vh;
+    overflow: scroll;
+}
+
+.message-field {
+    display: flex;
+}
+
+.message-writer {
+    padding: 15px;
+}
+
+.message-content {
+    border-radius: 20px;
+    max-width: 70%;
+    width: fit-content;
+    min-height: 10px;
+    padding: 15px;
+    font-size: 16px;
+}
+
+.otherMessage {
+    background-color: #73b72b;
+    color: white !important;
+}
+
+.dateUser {
+    text-align: right;
+}
+
+.userMessage {
+    background-color: #e4e4e4;
+    margin-left: auto;
+}
+
+.send-btn {
+    height: auto !important;
+    border-radius: 0;
+    box-shadow: none;
+    background: none !important;
+
+    .v-icon:hover {
         color: $mainColor;
     }
-    @media only screen and (max-width: 576px) {
-        .message-content {
-            max-width: 85%;
-            padding: 10px;
-            font-size: 14px;
-        }
+
+    &:before {
+        background-color: transparent;
     }
+}
+
+.add-btn {
+    color: $mainColor;
+}
+
+@media only screen and (max-width: 576px) {
+    .message-content {
+        max-width: 85%;
+        padding: 10px;
+        font-size: 14px;
+    }
+}
 </style>

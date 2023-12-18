@@ -2077,7 +2077,8 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     return {
       conversationName: "",
       state: "index",
-      conversation: this.conversation,
+      dataConversations: this.conversations,
+      dataConversation: "",
       messages: null,
       newMessage: "",
       nameState: "hide"
@@ -2108,55 +2109,27 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       this.nameState = this.nameState === 'show' ? 'hide' : 'show';
     },
     getDisplayNewName: function getDisplayNewName(conversation_id) {
-      var oldConversation = this.conversations.find(function (conversation) {
+      var oldConversation = this.dataConversations.find(function (conversation) {
         return conversation.id === conversation_id;
       });
       oldConversation.name = this.conversationName;
     },
-    storeConversation: function storeConversation() {
+    indexConversations: function indexConversations() {
       var _this = this;
-      return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-        var response, data;
-        return _regeneratorRuntime().wrap(function _callee$(_context) {
-          while (1) switch (_context.prev = _context.next) {
-            case 0:
-              _this.state = 'show';
-              _context.prev = 1;
-              _context.next = 4;
-              return fetch("/api/conversations", {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                  'X-CSRF-TOKEN': _this.csrfToken
-                }
-              });
-            case 4:
-              response = _context.sent;
-              if (response.ok) {
-                _context.next = 7;
-                break;
-              }
-              throw new Error('Échec de création de la conversation');
-            case 7:
-              _context.next = 9;
-              return response.json();
-            case 9:
-              data = _context.sent;
-              _this.conversation = data.conversation;
-              _context.next = 17;
-              break;
-            case 13:
-              _context.prev = 13;
-              _context.t0 = _context["catch"](1);
-              console.error(_context.t0);
-              throw _context.t0;
-            case 17:
-            case "end":
-              return _context.stop();
+      try {
+        fetch("/api/conversations", {
+          method: 'GET'
+        }).then(function (response) {
+          if (!response.ok) {
+            throw new Error("La r\xE9cup\xE9ration des conversations a \xE9chou\xE9. Statut : ".concat(response.status));
           }
-        }, _callee, null, [[1, 13]]);
-      }))();
+          return response.json();
+        }).then(function (data) {
+          _this.dataConversations = data.conversations;
+        });
+      } catch (error) {
+        console.log(error);
+      }
     },
     showConversation: function showConversation(conversation_id) {
       var _this2 = this;
@@ -2166,70 +2139,87 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       }).then(function (response) {
         return response.json();
       }).then(function (data) {
-        _this2.conversation = data.conversation;
+        _this2.dataConversation = data.conversation;
         _this2.messages = data.messages;
         _this2.conversationName = data.conversation.name;
       }).then(function () {
         _this2.scrollToTop();
-      })["catch"](function (err) {
-        return console.log(err);
+      })["catch"](function (error) {
+        return console.log(error);
       });
     },
-    deleteConversation: function deleteConversation(conversation_id) {
-      fetch("/api/conversations/".concat(conversation_id), {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': this.csrfToken
-        }
-      });
-    },
-    storeMessage: function storeMessage(conversation_id) {
+    storeConversation: function storeConversation() {
       var _this3 = this;
-      return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
-        var response;
-        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
-          while (1) switch (_context2.prev = _context2.next) {
+      return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
+        return _regeneratorRuntime().wrap(function _callee$(_context) {
+          while (1) switch (_context.prev = _context.next) {
             case 0:
-              _context2.prev = 0;
-              _context2.next = 3;
-              return fetch("/api/conversations/".concat(conversation_id, "/messages"), {
+              _context.prev = 0;
+              _context.next = 3;
+              return fetch("/api/conversations", {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                   'Accept': 'application/json',
                   'X-CSRF-TOKEN': _this3.csrfToken
-                },
-                body: JSON.stringify({
-                  content: _this3.newMessage
-                })
+                }
+              }).then(function () {
+                _this3.indexConversations();
               });
             case 3:
-              response = _context2.sent;
-              if (response.ok) {
-                _context2.next = 6;
-                break;
-              }
-              throw new Error('Échec de l\'envoi du message');
-            case 6:
-              _this3.newMessage = '';
-              _this3.showConversation(conversation_id);
-              _context2.next = 14;
+              _context.next = 9;
               break;
-            case 10:
-              _context2.prev = 10;
+            case 5:
+              _context.prev = 5;
+              _context.t0 = _context["catch"](0);
+              console.error(_context.t0);
+              throw _context.t0;
+            case 9:
+            case "end":
+              return _context.stop();
+          }
+        }, _callee, null, [[0, 5]]);
+      }))();
+    },
+    deleteConversation: function deleteConversation(conversation_id) {
+      var _this4 = this;
+      return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
+        var indexRemove;
+        return _regeneratorRuntime().wrap(function _callee2$(_context2) {
+          while (1) switch (_context2.prev = _context2.next) {
+            case 0:
+              _context2.prev = 0;
+              indexRemove = _this4.dataConversations.findIndex(function (conversation) {
+                return conversation.id === conversation_id;
+              });
+              _this4.dataConversations.splice(indexRemove, 1);
+              _context2.next = 5;
+              return fetch("/api/conversations/".concat(conversation_id), {
+                method: 'DELETE',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRF-TOKEN': _this4.csrfToken
+                }
+              }).then(function () {
+                _this4.indexConversations();
+              });
+            case 5:
+              _context2.next = 10;
+              break;
+            case 7:
+              _context2.prev = 7;
               _context2.t0 = _context2["catch"](0);
-              console.error(_context2.t0);
-              throw _context2.t0;
-            case 14:
+              console.error('Erreur lors de la suppression de la conversation', _context2.t0);
+              // Si la suppression côté serveur échoue, tu pourrais prendre des mesures supplémentaires ici
+            case 10:
             case "end":
               return _context2.stop();
           }
-        }, _callee2, null, [[0, 10]]);
+        }, _callee2, null, [[0, 7]]);
       }))();
     },
-    updateConversationName: function updateConversationName(conversation_id) {
-      var _this4 = this;
+    storeMessage: function storeMessage(conversation_id) {
+      var _this5 = this;
       return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
         var response;
         return _regeneratorRuntime().wrap(function _callee3$(_context3) {
@@ -2237,15 +2227,15 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
             case 0:
               _context3.prev = 0;
               _context3.next = 3;
-              return fetch("/api/conversations/".concat(conversation_id, "/name"), {
+              return fetch("/api/conversations/".concat(conversation_id, "/messages"), {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
                   'Accept': 'application/json',
-                  'X-CSRF-TOKEN': _this4.csrfToken
+                  'X-CSRF-TOKEN': _this5.csrfToken
                 },
                 body: JSON.stringify({
-                  content: _this4.conversationName
+                  content: _this5.newMessage
                 })
               });
             case 3:
@@ -2254,10 +2244,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                 _context3.next = 6;
                 break;
               }
-              throw new Error('Échec de la modification du nom de la conversation');
+              throw new Error('Échec de l\'envoi du message');
             case 6:
-              _this4.getDisplayNewName(conversation_id);
-              _this4.toggleConversationName();
+              _this5.newMessage = '';
+              _this5.showConversation(conversation_id);
               _context3.next = 14;
               break;
             case 10:
@@ -2270,6 +2260,50 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               return _context3.stop();
           }
         }, _callee3, null, [[0, 10]]);
+      }))();
+    },
+    updateConversationName: function updateConversationName(conversation_id) {
+      var _this6 = this;
+      return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee4() {
+        var response;
+        return _regeneratorRuntime().wrap(function _callee4$(_context4) {
+          while (1) switch (_context4.prev = _context4.next) {
+            case 0:
+              _context4.prev = 0;
+              _context4.next = 3;
+              return fetch("/api/conversations/".concat(conversation_id, "/name"), {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'X-CSRF-TOKEN': _this6.csrfToken
+                },
+                body: JSON.stringify({
+                  content: _this6.conversationName
+                })
+              });
+            case 3:
+              response = _context4.sent;
+              if (response.ok) {
+                _context4.next = 6;
+                break;
+              }
+              throw new Error('Échec de la modification du nom de la conversation');
+            case 6:
+              _this6.getDisplayNewName(conversation_id);
+              _this6.toggleConversationName();
+              _context4.next = 14;
+              break;
+            case 10:
+              _context4.prev = 10;
+              _context4.t0 = _context4["catch"](0);
+              console.error(_context4.t0);
+              throw _context4.t0;
+            case 14:
+            case "end":
+              return _context4.stop();
+          }
+        }, _callee4, null, [[0, 10]]);
       }))();
     }
   }
@@ -2496,7 +2530,7 @@ var render = function render() {
     on: {
       click: _vm.storeConversation
     }
-  }, [_c("v-icon", [_vm._v("mdi-plus")])], 1)], 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("v-card-text", _vm._l(_vm.conversations, function (conversation) {
+  }, [_c("v-icon", [_vm._v("mdi-plus")])], 1)], 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("v-card-text", _vm._l(_vm.dataConversations, function (conversation) {
     return _c("v-list", {
       key: conversation.id,
       staticClass: "list-conversation-container"
@@ -2525,7 +2559,7 @@ var render = function render() {
     }, [_c("v-icon", {
       staticClass: "delete-conv-icon"
     }, [_vm._v("mdi-close-circle")])], 1)])], 1);
-  }), 1)], 1) : _vm.state === "show" && _vm.conversation ? _c("div", {
+  }), 1)], 1) : _vm.state === "show" && _vm.dataConversation ? _c("div", {
     staticClass: "conversation-main-container"
   }, [_c("v-card-text", {
     staticClass: "conversation-title-container"
@@ -2563,7 +2597,7 @@ var render = function render() {
     staticClass: "send-btn",
     on: {
       click: function click($event) {
-        return _vm.updateConversationName(_vm.conversation.id);
+        return _vm.updateConversationName(_vm.dataConversation.id);
       }
     }
   }, [_c("v-icon", [_vm._v("mdi-send")])], 1)], 1) : _vm._e()], 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("v-card-text", {
@@ -2577,13 +2611,13 @@ var render = function render() {
       "class": {
         dateUser: message.user_id === _vm.user.id
       }
-    }, [_vm._v(_vm._s(_vm.formatCreatedAt(message.created_at)))]) : _vm._e(), _vm._v(" "), _c("v-list-item", {
+    }, [_vm._v("\n                    " + _vm._s(_vm.formatCreatedAt(message.created_at)))]) : _vm._e(), _vm._v(" "), _c("v-list-item", {
       staticClass: "message-content",
       "class": {
         userMessage: message.user_id === _vm.user.id,
         otherMessage: message.user_id !== _vm.user.id
       }
-    }, [_vm._v(_vm._s(message.content))])], 1);
+    }, [_vm._v("\n                    " + _vm._s(message.content) + "\n                ")])], 1);
   }), 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("div", {
     staticClass: "message-field"
   }, [_c("v-text-field", {
@@ -2602,7 +2636,7 @@ var render = function render() {
     staticClass: "send-btn",
     on: {
       click: function click($event) {
-        return _vm.storeMessage(_vm.conversation.id);
+        return _vm.storeMessage(_vm.dataConversation.id);
       }
     }
   }, [_c("v-icon", [_vm._v("mdi-send")])], 1)], 1)], 1) : _vm._e()]);
