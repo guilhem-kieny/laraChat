@@ -64,6 +64,12 @@ export default {
                 }
             }
         }
+        .conversation-btn-container {
+            .v-btn {
+                padding: 0;
+                min-width: 0;
+            }
+        }
     }
     .header-bot {
         background-color: $mainColor;

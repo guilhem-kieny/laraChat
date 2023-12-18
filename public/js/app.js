@@ -2081,7 +2081,9 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       dataConversation: "",
       messages: null,
       newMessage: "",
-      nameState: "hide"
+      nameState: "hide",
+      successMessage: "",
+      errorMessage: ""
     };
   },
   props: ["conversations", "user"],
@@ -2114,7 +2116,10 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
       });
       oldConversation.name = this.conversationName;
     },
-    indexConversations: function indexConversations() {
+    closeAlert: function closeAlert() {
+      this.successMessage = "";
+    },
+    reloadConversations: function reloadConversations() {
       var _this = this;
       try {
         fetch("/api/conversations", {
@@ -2163,8 +2168,12 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   'Accept': 'application/json',
                   'X-CSRF-TOKEN': _this3.csrfToken
                 }
-              }).then(function () {
-                _this3.indexConversations();
+              }).then(function (response) {
+                return response.json();
+              }).then(function (data) {
+                _this3.reloadConversations();
+                _this3.successMessage = "Conversation créé";
+                _this3.showConversation(data.conversation.id);
               });
             case 3:
               _context.next = 9;
@@ -2200,8 +2209,12 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
                   'Content-Type': 'application/json',
                   'X-CSRF-TOKEN': _this4.csrfToken
                 }
+              }).then(function (response) {
+                if (response.ok) {
+                  _this4.successMessage = "Conversation supprimée";
+                }
               }).then(function () {
-                _this4.indexConversations();
+                _this4.reloadConversations();
               });
             case 5:
               _context2.next = 10;
@@ -2210,7 +2223,6 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               _context2.prev = 7;
               _context2.t0 = _context2["catch"](0);
               console.error('Erreur lors de la suppression de la conversation', _context2.t0);
-              // Si la suppression côté serveur échoue, tu pourrais prendre des mesures supplémentaires ici
             case 10:
             case "end":
               return _context2.stop();
@@ -2247,19 +2259,20 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               throw new Error('Échec de l\'envoi du message');
             case 6:
               _this5.newMessage = '';
+              _this5.successMessage = '';
               _this5.showConversation(conversation_id);
-              _context3.next = 14;
+              _context3.next = 15;
               break;
-            case 10:
-              _context3.prev = 10;
+            case 11:
+              _context3.prev = 11;
               _context3.t0 = _context3["catch"](0);
               console.error(_context3.t0);
               throw _context3.t0;
-            case 14:
+            case 15:
             case "end":
               return _context3.stop();
           }
-        }, _callee3, null, [[0, 10]]);
+        }, _callee3, null, [[0, 11]]);
       }))();
     },
     updateConversationName: function updateConversationName(conversation_id) {
@@ -2530,7 +2543,15 @@ var render = function render() {
     on: {
       click: _vm.storeConversation
     }
-  }, [_c("v-icon", [_vm._v("mdi-plus")])], 1)], 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("v-card-text", _vm._l(_vm.dataConversations, function (conversation) {
+  }, [_c("v-icon", [_vm._v("mdi-plus")])], 1)], 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("v-card-text", [_vm.successMessage ? _c("v-alert", {
+    staticClass: "success",
+    attrs: {
+      type: "success"
+    },
+    on: {
+      click: _vm.closeAlert
+    }
+  }, [_vm._v("\n                " + _vm._s(_vm.successMessage) + "\n            ")]) : _vm._e(), _vm._v(" "), _vm._l(_vm.dataConversations, function (conversation) {
     return _c("v-list", {
       key: conversation.id,
       staticClass: "list-conversation-container"
@@ -2559,11 +2580,13 @@ var render = function render() {
     }, [_c("v-icon", {
       staticClass: "delete-conv-icon"
     }, [_vm._v("mdi-close-circle")])], 1)])], 1);
-  }), 1)], 1) : _vm.state === "show" && _vm.dataConversation ? _c("div", {
+  })], 2)], 1) : _vm.state === "show" && _vm.dataConversation ? _c("div", {
     staticClass: "conversation-main-container"
   }, [_c("v-card-text", {
     staticClass: "conversation-title-container"
-  }, [_c("v-card-title", [this.conversationName ? _c("h2", [_vm._v(_vm._s(_vm.truncateTitle(this.conversationName, 20)))]) : _vm._e()]), _vm._v(" "), _c("div", [_c("v-btn", {
+  }, [_c("v-card-title", [this.conversationName ? _c("h2", [_vm._v(_vm._s(_vm.truncateTitle(this.conversationName, 20)))]) : _vm._e()]), _vm._v(" "), _c("div", {
+    staticClass: "conversation-btn-container"
+  }, [_c("v-btn", {
     staticClass: "btn-transparent",
     on: {
       click: _vm.toggleConversationName
@@ -2604,7 +2627,15 @@ var render = function render() {
     attrs: {
       id: "conversation-container"
     }
-  }, _vm._l(_vm.messages, function (message, index) {
+  }, [_vm.successMessage ? _c("v-alert", {
+    staticClass: "success",
+    attrs: {
+      type: "success"
+    },
+    on: {
+      click: _vm.closeAlert
+    }
+  }, [_vm._v("\n                " + _vm._s(_vm.successMessage) + "\n            ")]) : _vm._e(), _vm._v(" "), _vm._l(_vm.messages, function (message, index) {
     return _c("v-list", {
       key: index
     }, [_vm.isLastItem(index) ? _c("p", {
@@ -2618,7 +2649,7 @@ var render = function render() {
         otherMessage: message.user_id !== _vm.user.id
       }
     }, [_vm._v("\n                    " + _vm._s(message.content) + "\n                ")])], 1);
-  }), 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("div", {
+  })], 2), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("div", {
     staticClass: "message-field"
   }, [_c("v-text-field", {
     staticClass: "message-writer",
@@ -2952,7 +2983,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "a[data-v-43e830ee] {\n  color: black;\n  text-decoration: none;\n}\n.update-conversation-name-container[data-v-43e830ee] {\n  position: absolute;\n  bottom: -90px;\n  left: 0;\n  display: flex;\n  background-color: white;\n  width: 100%;\n  z-index: 1;\n  padding: 10px;\n  box-shadow: 0 0 2px 0 #a7a7a7;\n}\n.list-conversation-main-container h2[data-v-43e830ee] {\n  font-size: 20px;\n}\n.list-conversation-container[data-v-43e830ee] {\n  padding: 5px 20px;\n}\n.list-item-conversation[data-v-43e830ee] {\n  display: flex;\n  border: 1px solid #e6e6e6;\n  border-radius: 5px;\n  padding: 0;\n  text-align: center;\n  transition: 0.3s;\n}\n.list-item-conversation[data-v-43e830ee]:hover {\n  background-color: #73b72b;\n  border: 1px solid #73b72b;\n}\n.list-item-conversation:hover .delete-conv-icon[data-v-43e830ee] {\n  visibility: visible;\n}\n.list-item-conversation:hover .link-conv[data-v-43e830ee] {\n  color: white;\n}\n.list-item-conversation .link-conv[data-v-43e830ee] {\n  width: 100%;\n  padding: 20px 0 20px 58px;\n}\n.list-item-conversation .list-delete-container[data-v-43e830ee] {\n  display: flex;\n  padding: 17px;\n  cursor: pointer;\n}\n.list-item-conversation .delete-conv-icon[data-v-43e830ee] {\n  visibility: hidden;\n  color: white;\n}\n.conversation-title-container[data-v-43e830ee] {\n  position: relative;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding-top: 0;\n  padding-bottom: 0;\n}\n.conversation-main-container[data-v-43e830ee] {\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  justify-content: space-around;\n}\n#conversation-container[data-v-43e830ee] {\n  height: 68vh;\n  overflow: scroll;\n}\n.message-field[data-v-43e830ee] {\n  display: flex;\n}\n.message-writer[data-v-43e830ee] {\n  padding: 15px;\n}\n.message-content[data-v-43e830ee] {\n  border-radius: 20px;\n  max-width: 70%;\n  width: -moz-fit-content;\n  width: fit-content;\n  min-height: 10px;\n  padding: 15px;\n  font-size: 16px;\n}\n.otherMessage[data-v-43e830ee] {\n  background-color: #73b72b;\n  color: white !important;\n}\n.dateUser[data-v-43e830ee] {\n  text-align: right;\n}\n.userMessage[data-v-43e830ee] {\n  background-color: #e4e4e4;\n  margin-left: auto;\n}\n.send-btn[data-v-43e830ee] {\n  height: auto !important;\n  border-radius: 0;\n  box-shadow: none;\n  background: none !important;\n}\n.send-btn .v-icon[data-v-43e830ee]:hover {\n  color: #73b72b;\n}\n.send-btn[data-v-43e830ee]:before {\n  background-color: transparent;\n}\n.add-btn[data-v-43e830ee] {\n  color: #73b72b;\n}\n@media only screen and (max-width: 576px) {\n.message-content[data-v-43e830ee] {\n    max-width: 85%;\n    padding: 10px;\n    font-size: 14px;\n}\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "a[data-v-43e830ee] {\n  color: black;\n  text-decoration: none;\n}\n.success[data-v-43e830ee] {\n  background-color: #4caf51;\n}\n.succes-container[data-v-43e830ee] {\n  border-radius: 0 !important;\n  display: flex;\n  align-content: center;\n  align-items: center;\n  height: 50px;\n}\n.succes-container .success-title[data-v-43e830ee] {\n  color: white;\n  text-align: center;\n}\n.update-conversation-name-container[data-v-43e830ee] {\n  position: absolute;\n  bottom: -90px;\n  left: 0;\n  display: flex;\n  background-color: white;\n  width: 100%;\n  z-index: 1;\n  padding: 10px;\n  box-shadow: 0 0 2px 0 #a7a7a7;\n}\n.list-conversation-main-container h2[data-v-43e830ee] {\n  font-size: 20px;\n}\n.list-conversation-container[data-v-43e830ee] {\n  padding: 5px 20px;\n}\n.list-item-conversation[data-v-43e830ee] {\n  display: flex;\n  border: 1px solid #e6e6e6;\n  border-radius: 5px;\n  padding: 0;\n  text-align: center;\n  transition: 0.3s;\n}\n.list-item-conversation[data-v-43e830ee]:hover {\n  background-color: #73b72b;\n  border: 1px solid #73b72b;\n}\n.list-item-conversation:hover .delete-conv-icon[data-v-43e830ee] {\n  visibility: visible;\n}\n.list-item-conversation:hover .link-conv[data-v-43e830ee] {\n  color: white;\n}\n.list-item-conversation .link-conv[data-v-43e830ee] {\n  width: 100%;\n  padding: 20px 0 20px 58px;\n}\n.list-item-conversation .list-delete-container[data-v-43e830ee] {\n  display: flex;\n  padding: 17px;\n  cursor: pointer;\n}\n.list-item-conversation .delete-conv-icon[data-v-43e830ee] {\n  visibility: hidden;\n  color: white;\n}\n.conversation-title-container[data-v-43e830ee] {\n  position: relative;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding-top: 0;\n  padding-bottom: 0;\n}\n.conversation-main-container[data-v-43e830ee] {\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  justify-content: space-around;\n}\n#conversation-container[data-v-43e830ee] {\n  height: 68vh;\n  overflow: scroll;\n}\n.message-field[data-v-43e830ee] {\n  display: flex;\n}\n.message-writer[data-v-43e830ee] {\n  padding: 15px;\n}\n.message-content[data-v-43e830ee] {\n  border-radius: 20px;\n  max-width: 70%;\n  width: -moz-fit-content;\n  width: fit-content;\n  min-height: 10px;\n  padding: 15px;\n  font-size: 16px;\n}\n.otherMessage[data-v-43e830ee] {\n  background-color: #73b72b;\n  color: white !important;\n}\n.dateUser[data-v-43e830ee] {\n  text-align: right;\n}\n.userMessage[data-v-43e830ee] {\n  background-color: #e4e4e4;\n  margin-left: auto;\n}\n.send-btn[data-v-43e830ee] {\n  height: auto !important;\n  border-radius: 0;\n  box-shadow: none;\n  background: none !important;\n}\n.send-btn .v-icon[data-v-43e830ee]:hover {\n  color: #73b72b;\n}\n.send-btn[data-v-43e830ee]:before {\n  background-color: transparent;\n}\n.add-btn[data-v-43e830ee] {\n  color: #73b72b;\n}\n@media only screen and (max-width: 576px) {\n.message-content[data-v-43e830ee] {\n    max-width: 85%;\n    padding: 10px;\n    font-size: 14px;\n}\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -2976,7 +3007,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, ".open-chat-container {\n  z-index: 1;\n  background-color: white;\n  padding: 10px;\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  cursor: pointer;\n}\n.chat-container {\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  box-shadow: 0 2px 4px 1px #828282;\n}\n.chat-container .list-conversation-main-container {\n  height: 500px;\n  width: 350px;\n  background-color: white;\n}\n.chat-container .list-conversation-main-container #conversation-container {\n  height: 70%;\n}\n.chat-container .list-conversation-main-container #conversation-container .message-content {\n  font-size: 14px;\n  padding: 10px;\n  min-height: 10px;\n}\n.header-bot {\n  background-color: #73b72b;\n  display: flex;\n  justify-content: space-between;\n  padding: 15px;\n}\n.header-bot .v-btn {\n  padding: 0 !important;\n  min-width: -moz-fit-content !important;\n  min-width: fit-content !important;\n}\n.header-bot .v-icon {\n  color: white !important;\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, ".open-chat-container {\n  z-index: 1;\n  background-color: white;\n  padding: 10px;\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  cursor: pointer;\n}\n.chat-container {\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  box-shadow: 0 2px 4px 1px #828282;\n}\n.chat-container .list-conversation-main-container {\n  height: 500px;\n  width: 350px;\n  background-color: white;\n}\n.chat-container .list-conversation-main-container #conversation-container {\n  height: 70%;\n}\n.chat-container .list-conversation-main-container #conversation-container .message-content {\n  font-size: 14px;\n  padding: 10px;\n  min-height: 10px;\n}\n.chat-container .conversation-btn-container .v-btn {\n  padding: 0;\n  min-width: 0;\n}\n.header-bot {\n  background-color: #73b72b;\n  display: flex;\n  justify-content: space-between;\n  padding: 15px;\n}\n.header-bot .v-btn {\n  padding: 0 !important;\n  min-width: -moz-fit-content !important;\n  min-width: fit-content !important;\n}\n.header-bot .v-icon {\n  color: white !important;\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 

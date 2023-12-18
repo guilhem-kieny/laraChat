@@ -12,6 +12,8 @@ export default {
             messages: null,
             newMessage: "",
             nameState: "hide",
+            successMessage: "",
+            errorMessage: "",
         }
     },
 
@@ -47,7 +49,10 @@ export default {
             const oldConversation = this.dataConversations.find(conversation => conversation.id === conversation_id);
             oldConversation.name = this.conversationName;
         },
-        indexConversations() {
+        closeAlert() {
+            this.successMessage = "";
+        },
+        reloadConversations() {
             try {
                 fetch(`/api/conversations`, {
                     method: 'GET',
@@ -71,7 +76,8 @@ export default {
             const response = fetch(`/api/conversations/${conversation_id}`, {
                 method: 'GET',
             })
-                .then((response) => response.json()).then((data) => {
+                .then((response) => response.json())
+                .then((data) => {
                     this.dataConversation = data.conversation;
                     this.messages = data.messages;
                     this.conversationName = data.conversation.name;
@@ -91,10 +97,12 @@ export default {
                         'X-CSRF-TOKEN': this.csrfToken,
                     },
                 })
-                    .then(() => {
-                            this.indexConversations();
-                        }
-                    )
+                    .then((response) => response.json())
+                    .then((data) => {
+                        this.reloadConversations();
+                        this.successMessage = "Conversation créé";
+                        this.showConversation(data.conversation.id);
+                    });
 
             } catch (error) {
                 console.error(error);
@@ -113,8 +121,13 @@ export default {
                         'X-CSRF-TOKEN': this.csrfToken,
                     }
                 })
+                    .then((response) => {
+                        if(response.ok) {
+                            this.successMessage = "Conversation supprimée";
+                        }
+                    })
                     .then(() => {
-                        this.indexConversations();
+                        this.reloadConversations();
                     });
             } catch (error) {
                 console.error('Erreur lors de la suppression de la conversation', error);
@@ -136,7 +149,7 @@ export default {
                 }
 
                 this.newMessage = '';
-
+                this.successMessage = '';
                 this.showConversation(conversation_id);
             } catch (error) {
                 console.error(error);
@@ -180,6 +193,11 @@ export default {
             <v-divider></v-divider>
 
             <v-card-text>
+
+                <v-alert v-if="successMessage" v-on:click="closeAlert" type="success" class="success">
+                    {{ successMessage }}
+                </v-alert>
+
                 <v-list class="list-conversation-container" v-for="conversation in dataConversations"
                         :key="conversation.id">
                     <v-list-item class="list-item-conversation">
@@ -199,7 +217,7 @@ export default {
                 <v-card-title>
                     <h2 v-if="this.conversationName">{{ truncateTitle(this.conversationName, 20) }}</h2>
                 </v-card-title>
-                <div>
+                <div class="conversation-btn-container">
                     <v-btn v-on:click="toggleConversationName" class="btn-transparent">
                         <v-icon>mdi-pencil</v-icon>
                     </v-btn>
@@ -217,11 +235,13 @@ export default {
                         <v-icon>mdi-send</v-icon>
                     </v-btn>
                 </div>
-
             </v-card-text>
             <v-divider></v-divider>
 
             <v-card-text id="conversation-container">
+                <v-alert v-if="successMessage" v-on:click="closeAlert" type="success" class="success">
+                    {{ successMessage }}
+                </v-alert>
                 <v-list v-for="(message, index) in messages" :key="index">
                     <p v-if="isLastItem(index)" :class="{ dateUser: message.user_id === user.id }">
                         {{ formatCreatedAt(message.created_at) }}</p>
@@ -251,6 +271,23 @@ $mainColor: #73b72b;
 a {
     color: black;
     text-decoration: none;
+}
+.success {
+    background-color: #4caf51;
+}
+
+.succes-container {
+    border-radius: 0 !important;
+    display: flex;
+    align-content: center;
+    align-items: center;
+    height: 50px;
+
+    .success-title {
+        color: white;
+        text-align: center;
+    }
+
 }
 
 .update-conversation-name-container {

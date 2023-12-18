@@ -28,11 +28,11 @@ class ConversationApiController extends Controller
 
         $user = Auth::user();
 
-        $user->conversations()->create([
+        $conversation = $user->conversations()->create([
             'name' => "Nouvelle conversation",
         ]);
 
-        return response("", 201);
+        return response()->json(['conversation' => $conversation, 'success' => 'Nouvelle conversation créé !'], 201);
     }
 
     public function destroy($id) {
