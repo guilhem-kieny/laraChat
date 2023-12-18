@@ -37,5 +37,19 @@ class ConversationApiController extends Controller
         return response("", 204);
     }
 
+    public function updateName($id, Request $request) {
+
+        $request->validate([
+            'content' => 'required|string|max:255',
+        ]);
+
+        $conversation = Conversation::findOrFail($id);
+
+        $conversation->update([
+            'name' => $request->input('content'),
+        ]);
+
+        return response()->json("",204);
+    }
 
 }

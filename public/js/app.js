@@ -2075,10 +2075,12 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
   name: "list-conversations",
   data: function data() {
     return {
+      conversationName: "",
       state: "index",
       conversation: this.conversation,
       messages: null,
-      newMessage: ""
+      newMessage: "",
+      nameState: "hide"
     };
   },
   props: ["conversations", "user"],
@@ -2095,6 +2097,21 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
     scrollToTop: function scrollToTop() {
       var container = document.getElementById('conversation-container');
       container.scrollTop = container.scrollHeight;
+    },
+    truncateTitle: function truncateTitle(title, maxLength) {
+      if (title.length > maxLength) {
+        title = title.slice(0, maxLength) + '...';
+      }
+      return title;
+    },
+    toggleConversationName: function toggleConversationName() {
+      this.nameState = this.nameState === 'show' ? 'hide' : 'show';
+    },
+    getDisplayNewName: function getDisplayNewName(conversation_id) {
+      var oldConversation = this.conversations.find(function (conversation) {
+        return conversation.id === conversation_id;
+      });
+      oldConversation.name = this.conversationName;
     },
     storeConversation: function storeConversation() {
       var _this = this;
@@ -2141,24 +2158,25 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         }, _callee, null, [[1, 13]]);
       }))();
     },
-    showConversation: function showConversation(id) {
+    showConversation: function showConversation(conversation_id) {
       var _this2 = this;
       this.state = 'show';
-      var response = fetch("/api/conversations/".concat(id), {
+      var response = fetch("/api/conversations/".concat(conversation_id), {
         method: 'GET'
       }).then(function (response) {
         return response.json();
       }).then(function (data) {
         _this2.conversation = data.conversation;
         _this2.messages = data.messages;
+        _this2.conversationName = data.conversation.name;
       }).then(function () {
         _this2.scrollToTop();
       })["catch"](function (err) {
         return console.log(err);
       });
     },
-    deleteConversation: function deleteConversation(id) {
-      fetch("/api/conversations/".concat(id), {
+    deleteConversation: function deleteConversation(conversation_id) {
+      fetch("/api/conversations/".concat(conversation_id), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -2166,7 +2184,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
         }
       });
     },
-    storeMessage: function storeMessage(id) {
+    storeMessage: function storeMessage(conversation_id) {
       var _this3 = this;
       return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee2() {
         var response;
@@ -2175,7 +2193,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
             case 0:
               _context2.prev = 0;
               _context2.next = 3;
-              return fetch("/api/conversations/".concat(id, "/messages"), {
+              return fetch("/api/conversations/".concat(conversation_id, "/messages"), {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -2195,7 +2213,7 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               throw new Error('Échec de l\'envoi du message');
             case 6:
               _this3.newMessage = '';
-              _this3.showConversation(id);
+              _this3.showConversation(conversation_id);
               _context2.next = 14;
               break;
             case 10:
@@ -2208,6 +2226,50 @@ function _asyncToGenerator(fn) { return function () { var self = this, args = ar
               return _context2.stop();
           }
         }, _callee2, null, [[0, 10]]);
+      }))();
+    },
+    updateConversationName: function updateConversationName(conversation_id) {
+      var _this4 = this;
+      return _asyncToGenerator( /*#__PURE__*/_regeneratorRuntime().mark(function _callee3() {
+        var response;
+        return _regeneratorRuntime().wrap(function _callee3$(_context3) {
+          while (1) switch (_context3.prev = _context3.next) {
+            case 0:
+              _context3.prev = 0;
+              _context3.next = 3;
+              return fetch("/api/conversations/".concat(conversation_id, "/name"), {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'X-CSRF-TOKEN': _this4.csrfToken
+                },
+                body: JSON.stringify({
+                  content: _this4.conversationName
+                })
+              });
+            case 3:
+              response = _context3.sent;
+              if (response.ok) {
+                _context3.next = 6;
+                break;
+              }
+              throw new Error('Échec de la modification du nom de la conversation');
+            case 6:
+              _this4.getDisplayNewName(conversation_id);
+              _this4.toggleConversationName();
+              _context3.next = 14;
+              break;
+            case 10:
+              _context3.prev = 10;
+              _context3.t0 = _context3["catch"](0);
+              console.error(_context3.t0);
+              throw _context3.t0;
+            case 14:
+            case "end":
+              return _context3.stop();
+          }
+        }, _callee3, null, [[0, 10]]);
       }))();
     }
   }
@@ -2467,7 +2529,12 @@ var render = function render() {
     staticClass: "conversation-main-container"
   }, [_c("v-card-text", {
     staticClass: "conversation-title-container"
-  }, [_c("v-card-title", [_c("h2", [_vm._v(_vm._s(_vm.conversation.name))])]), _vm._v(" "), _c("a", {
+  }, [_c("v-card-title", [this.conversationName ? _c("h2", [_vm._v(_vm._s(_vm.truncateTitle(this.conversationName, 20)))]) : _vm._e()]), _vm._v(" "), _c("div", [_c("v-btn", {
+    staticClass: "btn-transparent",
+    on: {
+      click: _vm.toggleConversationName
+    }
+  }, [_c("v-icon", [_vm._v("mdi-pencil")])], 1), _vm._v(" "), _c("a", {
     attrs: {
       href: "#"
     },
@@ -2479,7 +2546,27 @@ var render = function render() {
     }
   }, [_c("v-btn", {
     staticClass: "btn-transparent"
-  }, [_c("v-icon", [_vm._v("mdi-chevron-left")])], 1)], 1)], 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("v-card-text", {
+  }, [_c("v-icon", [_vm._v("mdi-chevron-left")])], 1)], 1)], 1), _vm._v(" "), _vm.nameState === "show" ? _c("div", {
+    staticClass: "update-conversation-name-container"
+  }, [_c("v-text-field", {
+    attrs: {
+      placeholder: "Modifiez le nom de la conversation ..."
+    },
+    model: {
+      value: _vm.conversationName,
+      callback: function callback($$v) {
+        _vm.conversationName = $$v;
+      },
+      expression: "conversationName"
+    }
+  }), _vm._v(" "), _c("v-btn", {
+    staticClass: "send-btn",
+    on: {
+      click: function click($event) {
+        return _vm.updateConversationName(_vm.conversation.id);
+      }
+    }
+  }, [_c("v-icon", [_vm._v("mdi-send")])], 1)], 1) : _vm._e()], 1), _vm._v(" "), _c("v-divider"), _vm._v(" "), _c("v-card-text", {
     attrs: {
       id: "conversation-container"
     }
@@ -2831,7 +2918,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, "a[data-v-43e830ee] {\n  color: black;\n  text-decoration: none;\n}\n.list-conversation-container[data-v-43e830ee] {\n  padding: 5px 20px;\n}\n.list-item-conversation[data-v-43e830ee] {\n  display: flex;\n  border: 1px solid #e6e6e6;\n  border-radius: 5px;\n  padding: 0;\n  text-align: center;\n  transition: 0.3s;\n}\n.list-item-conversation[data-v-43e830ee]:hover {\n  background-color: #73b72b;\n  border: 1px solid #73b72b;\n}\n.list-item-conversation:hover .delete-conv-icon[data-v-43e830ee] {\n  visibility: visible;\n}\n.list-item-conversation:hover .link-conv[data-v-43e830ee] {\n  color: white;\n}\n.list-item-conversation .link-conv[data-v-43e830ee] {\n  width: 100%;\n  padding: 20px 0 20px 58px;\n}\n.list-item-conversation .list-delete-container[data-v-43e830ee] {\n  display: flex;\n  padding: 17px;\n  cursor: pointer;\n}\n.list-item-conversation .delete-conv-icon[data-v-43e830ee] {\n  visibility: hidden;\n  color: white;\n}\n.conversation-title-container[data-v-43e830ee] {\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding-top: 0;\n  padding-bottom: 0;\n}\n.conversation-main-container[data-v-43e830ee] {\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  justify-content: space-around;\n}\n#conversation-container[data-v-43e830ee] {\n  height: 68vh;\n  overflow: scroll;\n}\n.message-field[data-v-43e830ee] {\n  display: flex;\n}\n.message-writer[data-v-43e830ee] {\n  padding: 15px;\n}\n.message-content[data-v-43e830ee] {\n  border-radius: 20px;\n  max-width: 70%;\n  width: -moz-fit-content;\n  width: fit-content;\n  min-height: 10px;\n  padding: 15px;\n  font-size: 16px;\n}\n.otherMessage[data-v-43e830ee] {\n  background-color: #73b72b;\n  color: white !important;\n}\n.dateUser[data-v-43e830ee] {\n  text-align: right;\n}\n.userMessage[data-v-43e830ee] {\n  background-color: #e4e4e4;\n  margin-left: auto;\n}\n.send-btn[data-v-43e830ee] {\n  height: auto !important;\n  border-radius: 0;\n  box-shadow: none;\n  background: none !important;\n}\n.send-btn .v-icon[data-v-43e830ee]:hover {\n  color: #73b72b;\n}\n.send-btn[data-v-43e830ee]:before {\n  background-color: transparent;\n}\n.add-btn[data-v-43e830ee] {\n  color: #73b72b;\n}\n@media only screen and (max-width: 576px) {\n.message-content[data-v-43e830ee] {\n    max-width: 85%;\n    padding: 10px;\n    font-size: 14px;\n}\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, "a[data-v-43e830ee] {\n  color: black;\n  text-decoration: none;\n}\n.update-conversation-name-container[data-v-43e830ee] {\n  position: absolute;\n  bottom: -90px;\n  left: 0;\n  display: flex;\n  background-color: white;\n  width: 100%;\n  z-index: 1;\n  padding: 10px;\n  box-shadow: 0 0 2px 0 #a7a7a7;\n}\n.list-conversation-main-container h2[data-v-43e830ee] {\n  font-size: 20px;\n}\n.list-conversation-container[data-v-43e830ee] {\n  padding: 5px 20px;\n}\n.list-item-conversation[data-v-43e830ee] {\n  display: flex;\n  border: 1px solid #e6e6e6;\n  border-radius: 5px;\n  padding: 0;\n  text-align: center;\n  transition: 0.3s;\n}\n.list-item-conversation[data-v-43e830ee]:hover {\n  background-color: #73b72b;\n  border: 1px solid #73b72b;\n}\n.list-item-conversation:hover .delete-conv-icon[data-v-43e830ee] {\n  visibility: visible;\n}\n.list-item-conversation:hover .link-conv[data-v-43e830ee] {\n  color: white;\n}\n.list-item-conversation .link-conv[data-v-43e830ee] {\n  width: 100%;\n  padding: 20px 0 20px 58px;\n}\n.list-item-conversation .list-delete-container[data-v-43e830ee] {\n  display: flex;\n  padding: 17px;\n  cursor: pointer;\n}\n.list-item-conversation .delete-conv-icon[data-v-43e830ee] {\n  visibility: hidden;\n  color: white;\n}\n.conversation-title-container[data-v-43e830ee] {\n  position: relative;\n  display: flex;\n  justify-content: space-between;\n  align-items: center;\n  padding-top: 0;\n  padding-bottom: 0;\n}\n.conversation-main-container[data-v-43e830ee] {\n  height: 100%;\n  display: flex;\n  flex-direction: column;\n  justify-content: space-around;\n}\n#conversation-container[data-v-43e830ee] {\n  height: 68vh;\n  overflow: scroll;\n}\n.message-field[data-v-43e830ee] {\n  display: flex;\n}\n.message-writer[data-v-43e830ee] {\n  padding: 15px;\n}\n.message-content[data-v-43e830ee] {\n  border-radius: 20px;\n  max-width: 70%;\n  width: -moz-fit-content;\n  width: fit-content;\n  min-height: 10px;\n  padding: 15px;\n  font-size: 16px;\n}\n.otherMessage[data-v-43e830ee] {\n  background-color: #73b72b;\n  color: white !important;\n}\n.dateUser[data-v-43e830ee] {\n  text-align: right;\n}\n.userMessage[data-v-43e830ee] {\n  background-color: #e4e4e4;\n  margin-left: auto;\n}\n.send-btn[data-v-43e830ee] {\n  height: auto !important;\n  border-radius: 0;\n  box-shadow: none;\n  background: none !important;\n}\n.send-btn .v-icon[data-v-43e830ee]:hover {\n  color: #73b72b;\n}\n.send-btn[data-v-43e830ee]:before {\n  background-color: transparent;\n}\n.add-btn[data-v-43e830ee] {\n  color: #73b72b;\n}\n@media only screen and (max-width: 576px) {\n.message-content[data-v-43e830ee] {\n    max-width: 85%;\n    padding: 10px;\n    font-size: 14px;\n}\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 
@@ -2855,7 +2942,7 @@ __webpack_require__.r(__webpack_exports__);
 
 var ___CSS_LOADER_EXPORT___ = _node_modules_css_loader_dist_runtime_api_js__WEBPACK_IMPORTED_MODULE_0___default()(function(i){return i[1]});
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, ".open-chat-container {\n  z-index: 1;\n  background-color: white;\n  padding: 10px;\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  cursor: pointer;\n}\n.chat-container {\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  box-shadow: 0 2px 4px 1px #828282;\n}\n.chat-container .list-conversation-main-container {\n  height: 500px;\n  width: 350px;\n  background-color: white;\n}\n.chat-container .list-conversation-main-container h2 {\n  font-size: 20px;\n}\n.chat-container .list-conversation-main-container #conversation-container {\n  height: 70%;\n}\n.chat-container .list-conversation-main-container #conversation-container .message-content {\n  font-size: 14px;\n  padding: 10px;\n  min-height: 10px;\n}\n.header-bot {\n  background-color: #73b72b;\n  display: flex;\n  justify-content: space-between;\n  padding: 15px;\n}\n.header-bot .v-btn {\n  padding: 0 !important;\n  min-width: -moz-fit-content !important;\n  min-width: fit-content !important;\n}\n.header-bot .v-icon {\n  color: white !important;\n}", ""]);
+___CSS_LOADER_EXPORT___.push([module.id, ".open-chat-container {\n  z-index: 1;\n  background-color: white;\n  padding: 10px;\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  cursor: pointer;\n}\n.chat-container {\n  position: absolute;\n  bottom: 0;\n  left: -100px;\n  box-shadow: 0 2px 4px 1px #828282;\n}\n.chat-container .list-conversation-main-container {\n  height: 500px;\n  width: 350px;\n  background-color: white;\n}\n.chat-container .list-conversation-main-container #conversation-container {\n  height: 70%;\n}\n.chat-container .list-conversation-main-container #conversation-container .message-content {\n  font-size: 14px;\n  padding: 10px;\n  min-height: 10px;\n}\n.header-bot {\n  background-color: #73b72b;\n  display: flex;\n  justify-content: space-between;\n  padding: 15px;\n}\n.header-bot .v-btn {\n  padding: 0 !important;\n  min-width: -moz-fit-content !important;\n  min-width: fit-content !important;\n}\n.header-bot .v-icon {\n  color: white !important;\n}", ""]);
 // Exports
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (___CSS_LOADER_EXPORT___);
 

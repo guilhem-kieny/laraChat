@@ -55,9 +55,6 @@ export default {
             height: 500px;
             width: 350px;
             background-color: white;
-            h2 {
-                font-size: 20px;
-            }
             #conversation-container {
                 height: 70%;
                 .message-content {

@@ -5,10 +5,12 @@ export default {
     name: "list-conversations",
     data() {
         return {
+            conversationName: "",
             state: "index",
             conversation: this.conversation,
-            messages:null,
-            newMessage:"",
+            messages: null,
+            newMessage: "",
+            nameState: "hide",
         }
     },
 
@@ -30,6 +32,19 @@ export default {
         scrollToTop() {
             let container = document.getElementById('conversation-container');
             container.scrollTop = container.scrollHeight;
+        },
+        truncateTitle(title, maxLength) {
+            if (title.length > maxLength) {
+                title = title.slice(0, maxLength) + '...';
+            }
+            return title;
+        },
+        toggleConversationName() {
+            this.nameState = this.nameState === 'show' ? 'hide' : 'show';
+        },
+        getDisplayNewName(conversation_id) {
+            const oldConversation = this.conversations.find(conversation => conversation.id === conversation_id);
+            oldConversation.name = this.conversationName;
         },
         async storeConversation() {
             this.state = 'show';
@@ -55,24 +70,24 @@ export default {
                 throw error;
             }
         },
-        showConversation(id) {
+        showConversation(conversation_id) {
             this.state = 'show';
 
-            const response = fetch(`/api/conversations/${id}`, {
+            const response = fetch(`/api/conversations/${conversation_id}`, {
                 method: 'GET',
             }).then((response) => response.json()).then((data) =>{
 
                 this.conversation = data.conversation;
                 this.messages = data.messages;
+                this.conversationName = data.conversation.name;
             }).then(() => {
 
                 this.scrollToTop();
-
             }).catch((err) => console.log(err))
         },
-        deleteConversation(id) {
+        deleteConversation(conversation_id) {
 
-            fetch(`/api/conversations/${id}`, {
+            fetch(`/api/conversations/${conversation_id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -80,9 +95,9 @@ export default {
                 }
             })
         },
-        async storeMessage(id) {
+        async storeMessage(conversation_id) {
             try {
-                const response = await fetch(`/api/conversations/${id}/messages`, {
+                const response = await fetch(`/api/conversations/${conversation_id}/messages`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -97,7 +112,28 @@ export default {
 
                 this.newMessage = '';
 
-                this.showConversation(id);
+                this.showConversation(conversation_id);
+            } catch (error) {
+                console.error(error);
+                throw error;
+            }
+        },
+        async updateConversationName(conversation_id) {
+            try {
+                const response = await fetch(`/api/conversations/${conversation_id}/name`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken,
+                    },
+                    body: JSON.stringify({ content: this.conversationName }),
+                });
+                if (!response.ok) {
+                    throw new Error('Échec de la modification du nom de la conversation');
+                }
+                this.getDisplayNewName(conversation_id);
+                this.toggleConversationName();
             } catch (error) {
                 console.error(error);
                 throw error;
@@ -117,28 +153,38 @@ export default {
             <v-divider></v-divider>
 
             <v-card-text>
-            <v-list class="list-conversation-container" v-for="conversation in conversations" :key="conversation.id">
-                <v-list-item class="list-item-conversation">
-                    <a class="link-conv" v-on:click.prevent="showConversation(conversation.id)" href="#">
-                        <v-list-item-title class="list-item">{{ conversation.name }}</v-list-item-title>
-                    </a>
-                    <div class="list-delete-container" v-on:click="deleteConversation(conversation.id)">
-                        <v-icon class="delete-conv-icon">mdi-close-circle</v-icon>
-                    </div>
-                </v-list-item>
-
-            </v-list>
-        </v-card-text>
+                <v-list class="list-conversation-container" v-for="conversation in conversations" :key="conversation.id">
+                    <v-list-item class="list-item-conversation">
+                        <a class="link-conv" v-on:click.prevent="showConversation(conversation.id)" href="#">
+                            <v-list-item-title class="list-item">{{ conversation.name }}</v-list-item-title>
+                        </a>
+                        <div class="list-delete-container" v-on:click="deleteConversation(conversation.id)">
+                            <v-icon class="delete-conv-icon">mdi-close-circle</v-icon>
+                        </div>
+                    </v-list-item>
+                </v-list>
+            </v-card-text>
         </div>
 
         <div class="conversation-main-container" v-else-if="state === 'show' && conversation">
             <v-card-text class="conversation-title-container">
-                <v-card-title><h2>{{ conversation.name }}</h2></v-card-title>
-                <a v-on:click.prevent="state = 'index'" href="#">
-                    <v-btn class="btn-transparent">
-                        <v-icon>mdi-chevron-left</v-icon>
-                    </v-btn>
-                </a>
+                <v-card-title>
+                    <h2 v-if="this.conversationName">{{ truncateTitle(this.conversationName, 20) }}</h2>
+                </v-card-title>
+                <div>
+                    <v-btn v-on:click="toggleConversationName" class="btn-transparent"><v-icon>mdi-pencil</v-icon></v-btn>
+                    <a v-on:click.prevent="state = 'index'" href="#">
+                        <v-btn class="btn-transparent">
+                            <v-icon>mdi-chevron-left</v-icon>
+                        </v-btn>
+                    </a>
+                </div>
+
+                <div class="update-conversation-name-container" v-if="nameState === 'show'">
+                    <v-text-field v-model="conversationName" placeholder="Modifiez le nom de la conversation ..."></v-text-field>
+                    <v-btn class="send-btn" v-on:click="updateConversationName(conversation.id)"><v-icon>mdi-send</v-icon></v-btn>
+                </div>
+
             </v-card-text>
             <v-divider></v-divider>
 
@@ -161,13 +207,30 @@ export default {
 
 <style lang="scss" scoped>
     $mainColor: #73b72b;
+
     a {
         color: black;
         text-decoration: none;
     }
-    .list-conversation-container {
-        padding: 5px 20px;
+    .update-conversation-name-container {
+        position: absolute;
+        bottom: -90px;
+        left: 0;
+        display: flex;
+        background-color: white;
+        width: 100%;
+        z-index: 1;
+        padding: 10px;
+        box-shadow: 0 0 2px 0 #a7a7a7;
     }
+    .list-conversation-main-container {
+        h2 {
+            font-size: 20px;
+        }
+    }
+    .list-conversation-container {
+         padding: 5px 20px;
+     }
     .list-item-conversation {
         display: flex;
         border: 1px solid #e6e6e6;
@@ -200,6 +263,7 @@ export default {
         }
     }
     .conversation-title-container {
+        position: relative;
         display: flex;
         justify-content: space-between;
         align-items: center;
