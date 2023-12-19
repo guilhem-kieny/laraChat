@@ -1,45 +1,35 @@
-<script>
+<script setup>
+import { ref } from 'vue';
 
+const formData = ref({
+    email:"",
+    password:"",
+});
 
-export default {
-    name: "login-form",
-
-    data() {
-        return {
-            formData: {
-                email:"",
-                password:"",
+const csrfToken = ref(document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+const submitForm = async () => {
+    try {
+        const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken.value,
             },
-        };
-    },
-    created() {
-        this.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    },
-    methods: {
-        async submitForm() {
-            try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                    body: JSON.stringify(this.formData)
-                });
-                if(response.ok) {
-                    const data = await response.json();
-                    console.log(data);
-                    window.location.href = data.redirect_url;
-                } else {
-                    console.error('Echec de la requête');
-                }
-            } catch (error) {
-                console.error(error);
-            }
-        },
+            body: JSON.stringify(formData.value),
+        });
+        if (response.ok) {
+            const data = await response.json();
+
+            window.location.href = data.redirect_url;
+        } else {
+            throw new Error(`Erreur HTTP : ${response.status}`);
+        }
+    } catch (error) {
+        console.log(error);
     }
-}
+};
+
 </script>
 
 <template>

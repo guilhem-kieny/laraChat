@@ -1,22 +1,16 @@
-<script>
-export default {
-    name: "modal-bot",
+<script setup>
+    import { ref } from 'vue'
 
-    data() {
-        return {
-            state: "close",
-        }
-    },
-    props: [
+    let state = ref("close");
+
+    const props = defineProps([
         "conversations",
         "user"
-    ],
-    methods: {
-        toggleState() {
-            this.state = this.state === 'open' ? 'close' : 'open';
-        }
+    ])
+
+    function toggleState() {
+        state.value = state.value === 'open' ? 'close' : 'open';
     }
-}
 </script>
 
 <template>
@@ -24,13 +18,13 @@ export default {
         <div v-on:click="toggleState" v-if="state === 'close'" class="open-chat-container">
             <v-icon class="robot-icon">mdi-robot</v-icon>
         </div>
-        <div v-if="state === 'open'" class="chat-container">
+        <div v-else-if="state === 'open'" class="chat-container">
             <div class="header-bot">
                 <v-btn class="btn-transparent"><v-icon>mdi-menu</v-icon></v-btn>
                 <v-icon class="robot-icon">mdi-robot</v-icon>
                 <v-btn class="btn-transparent" v-on:click="toggleState"><v-icon class="robot-icon">mdi-close</v-icon></v-btn>
             </div>
-            <list-conversations :conversations="conversations" :user="user"></list-conversations>
+            <list-conversations :conversations="conversations" :user="user"/>
         </div>
     </div>
 </template>

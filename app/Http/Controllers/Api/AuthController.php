@@ -29,7 +29,6 @@ class AuthController extends Controller
 
         $redirectUrl = route('login');
 
-        // Retourner une réponse JSON avec l'URL de redirection
         return response()->json(['redirect_url' => $redirectUrl]);
     }
 

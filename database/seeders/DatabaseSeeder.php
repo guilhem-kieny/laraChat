@@ -34,6 +34,8 @@ class DatabaseSeeder extends Seeder
             $conversation->users()->attach($usersInConversation[1]);
         }*/
        Message::factory(20)->create();
-
+        /*$user = User::where('id', '=', 14)->first();
+        $conversation = Conversation::where('id', '=', 43)->first();
+        $user->conversations()->attach($conversation->id);*/
     }
 }

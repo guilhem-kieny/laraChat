@@ -45,7 +45,6 @@ class ConversationApiController extends Controller
     }
 
     public function updateName($id, Request $request) {
-
         $request->validate([
             'content' => 'required|string|max:255',
         ]);

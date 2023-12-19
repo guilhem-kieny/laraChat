@@ -1,182 +1,176 @@
-<script>
+<script setup>
 import {DateTime} from 'luxon';
+import { ref, defineProps } from 'vue';
 
-export default {
-    name: "list-conversations",
-    data() {
-        return {
-            conversationName: "",
-            state: "index",
-            dataConversations: this.conversations,
-            dataConversation: "",
-            messages: null,
-            newMessage: "",
-            nameState: "hide",
-            successMessage: "",
-            errorMessage: "",
-        }
-    },
+const props = defineProps([
+    "conversations",
+    "user"
+]);
 
-    props: [
-        "conversations",
-        "user"
-    ],
-    created() {
-        this.csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    },
+let conversationName = ref("");
+let dataConversation = ref("");
+let messages = ref("");
+let newMessage = ref("");
+let successMessage = ref("");
 
-    methods: {
-        isLastItem(index) {
-            return index === this.messages.length - 1;
-        },
-        formatCreatedAt(date) {
-            return DateTime.fromISO(date).toFormat('HH:mm dd LLLL yyyy');
-        },
-        scrollToTop() {
-            let container = document.getElementById('conversation-container');
-            container.scrollTop = container.scrollHeight;
-        },
-        truncateTitle(title, maxLength) {
-            if (title.length > maxLength) {
-                title = title.slice(0, maxLength) + '...';
-            }
-            return title;
-        },
-        toggleConversationName() {
-            this.nameState = this.nameState === 'show' ? 'hide' : 'show';
-        },
-        getDisplayNewName(conversation_id) {
-            const oldConversation = this.dataConversations.find(conversation => conversation.id === conversation_id);
-            oldConversation.name = this.conversationName;
-        },
-        closeAlert() {
-            this.successMessage = "";
-        },
-        reloadConversations() {
-            try {
-                fetch(`/api/conversations`, {
-                    method: 'GET',
-                })
-                    .then((response) => {
-                        if (!response.ok) {
-                            throw new Error(`La récupération des conversations a échoué. Statut : ${response.status}`);
-                        }
-                        return response.json();
-                    })
-                    .then((data) => {
-                        this.dataConversations = data.conversations;
-                    });
-            } catch (error) {
-                console.log(error);
-            }
-        },
-        showConversation(conversation_id) {
-            this.state = 'show';
+let state = ref("index");
+let dataConversations = ref(props.conversations);
+let nameState= ref("hide");
 
-            const response = fetch(`/api/conversations/${conversation_id}`, {
-                method: 'GET',
-            })
-                .then((response) => response.json())
-                .then((data) => {
-                    this.dataConversation = data.conversation;
-                    this.messages = data.messages;
-                    this.conversationName = data.conversation.name;
-                })
-                .then(() => {
-                    this.scrollToTop();
-                }).catch((error) => console.log(error))
-        },
-        async storeConversation() {
+const csrfToken = ref(document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
 
-            try {
-                await fetch(`/api/conversations`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        this.reloadConversations();
-                        this.successMessage = "Conversation créé";
-                        this.showConversation(data.conversation.id);
-                    });
-
-            } catch (error) {
-                console.error(error);
-                throw error;
-            }
-        },
-        async deleteConversation(conversation_id) {
-            try {
-                const indexRemove = this.dataConversations.findIndex(conversation => conversation.id === conversation_id);
-                this.dataConversations.splice(indexRemove, 1);
-
-                await fetch(`/api/conversations/${conversation_id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    }
-                })
-                    .then((response) => {
-                        if(response.ok) {
-                            this.successMessage = "Conversation supprimée";
-                        }
-                    })
-                    .then(() => {
-                        this.reloadConversations();
-                    });
-            } catch (error) {
-                console.error('Erreur lors de la suppression de la conversation', error);
-            }
-        },
-        async storeMessage(conversation_id) {
-            try {
-                const response = await fetch(`/api/conversations/${conversation_id}/messages`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                    body: JSON.stringify({content: this.newMessage}),
-                });
+function isLastItem(index) {
+    return index === messages.value.length - 1;
+}
+function formatCreatedAt(date) {
+    return DateTime.fromISO(date).toFormat('HH:mm dd LLLL yyyy');
+}
+function scrollToTop() {
+    let container = document.getElementById('conversation-container');
+    container.scrollTop = container.scrollHeight;
+}
+function truncateTitle(title, maxLength) {
+    if (title.length > maxLength) {
+        title = title.slice(0, maxLength) + '...';
+    }
+    return title;
+}
+function toggleConversationName() {
+    nameState.value = nameState.value === 'show' ? 'hide' : 'show';
+}
+function getDisplayNewName(conversation_id) {
+    const oldConversation = ref(dataConversations.value.find(conversation => conversation.id === conversation_id));
+    oldConversation.value.name = conversationName.value;
+}
+function closeAlert() {
+    successMessage.value = "";
+}
+const reloadConversations = async () => {
+    try {
+        await fetch('/api/conversations', {
+            method: 'GET',
+        })
+            .then((response) => {
                 if (!response.ok) {
+                    throw new Error(`La récupération des conversations a échoué. Statut : ${response.status}`);
+                }
+                return response.json();
+            })
+            .then((data) => {
+                dataConversations.value = data.conversations;
+            });
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+const showConversation = async (conversation_id) => {
+    state.value = "show"
+    try {
+        await fetch(`/api/conversations/${conversation_id}`, {
+            method: 'GET',
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                dataConversation.value = data.conversation;
+                messages.value = data.messages;
+                conversationName.value = data.conversation.name;
+            })
+            .then(() => {
+                scrollToTop();
+            })
+    } catch(error) {
+        console.log(error);
+    }
+}
+const storeConversation = async () => {
+    try {
+        await fetch(`/api/conversations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken.value,
+            },
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                reloadConversations();
+                successMessage.value = "Conversation créé";
+                showConversation(data.conversation.id);
+            });
+
+    } catch (error) {
+        console.error(error);
+    }
+}
+const deleteConversation = async (conversation_id) => {
+    try {
+        const indexRemove = dataConversations.value.findIndex(conversation => conversation.id === conversation_id);
+        dataConversations.value.splice(indexRemove, 1);
+
+        await fetch(`/api/conversations/${conversation_id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken.value,
+            }
+        })
+            .then((response) => {
+                if(response.ok) {
+                    successMessage.value = "Conversation supprimée";
+                }
+            })
+            .then(() => {
+                reloadConversations();
+            });
+    } catch (error) {
+        console.error('Erreur lors de la suppression de la conversation', error);
+    }
+}
+const storeMessage = async (conversation_id) => {
+    try {
+        await fetch(`/api/conversations/${conversation_id}/messages`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken.value,
+            },
+            body: JSON.stringify({content: newMessage.value}),
+        })
+            .then((response) => {
+                if(!response.ok) {
                     throw new Error('Échec de l\'envoi du message');
                 }
-
-                this.newMessage = '';
-                this.successMessage = '';
-                this.showConversation(conversation_id);
-            } catch (error) {
-                console.error(error);
-                throw error;
-            }
-        },
-        async updateConversationName(conversation_id) {
-            try {
-                const response = await fetch(`/api/conversations/${conversation_id}/name`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': this.csrfToken,
-                    },
-                    body: JSON.stringify({content: this.conversationName}),
-                });
-                if (!response.ok) {
+                newMessage.value = "";
+                successMessage.value = "";
+                showConversation(conversation_id);
+            })
+    } catch (error) {
+        console.error(error);
+    }
+}
+const updateConversationName = async (conversation_id) => {
+    try {
+        await fetch(`/api/conversations/${conversation_id}/name`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken.value,
+            },
+            body: JSON.stringify({content: conversationName.value}),
+        })
+            .then((response) => {
+                if(!response.ok) {
                     throw new Error('Échec de la modification du nom de la conversation');
                 }
-                this.getDisplayNewName(conversation_id);
-                this.toggleConversationName();
-            } catch (error) {
-                console.error(error);
-                throw error;
-            }
-        },
+                getDisplayNewName(conversation_id);
+                toggleConversationName();
+            })
+    } catch (error) {
+        console.error(error);
     }
 }
 </script>
@@ -215,7 +209,7 @@ export default {
         <div class="conversation-main-container" v-else-if="state === 'show' && dataConversation">
             <v-card-text class="conversation-title-container">
                 <v-card-title>
-                    <h2 v-if="this.conversationName">{{ truncateTitle(this.conversationName, 20) }}</h2>
+                    <h2 v-if="conversationName">{{ truncateTitle(conversationName, 20) }}</h2>
                 </v-card-title>
                 <div class="conversation-btn-container">
                     <v-btn v-on:click="toggleConversationName" class="btn-transparent">

@@ -18,7 +18,7 @@ class MessageFactory extends Factory
     {
         return [
             'user_id' => fake()->randomElement([11, 14]),
-            'conversation_id' => 17,
+            'conversation_id' => 43,
             'content' => fake()->text(),
         ];
     }
